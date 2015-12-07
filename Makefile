@@ -46,7 +46,7 @@ love:
 
 libnrpc.a:$(objs)
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mlibnrpc.a[0m']"
-	ar crs libnrpc.a $(objs)
+	ar rcs libnrpc.a $(objs)
 
 $(objs): %.o: %.cpp
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mobjs[0m']"

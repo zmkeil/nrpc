@@ -2,15 +2,17 @@
 /***********************************************
   File name		: test_ngx.cpp
   Create date	: 2015-12-06 21:23
-  Modified date : 2015-12-06 21:47
+  Modified date : 2015-12-07 23:15
   Author		: zmkeil, alibaba.inc
   Express : 
   
  **********************************************/
 
+extern "C" {
 #include <ngx_config.h>
 #include <ngx_core.h>
 #include <nginx.h>
+}
 
 ngx_uint_t          ngx_max_module;
 ngx_uint_t          ngx_dump_config;
@@ -19,8 +21,8 @@ ngx_uint_t          ngx_dump_config;
 static ngx_uint_t   ngx_show_help;
 static ngx_uint_t   ngx_show_version;
 static ngx_uint_t   ngx_show_configure;
-static u_char      *ngx_prefix;
-static u_char      *ngx_conf_file;
+static u_char      *ngx_prefix = (u_char*)"./";
+static u_char      *ngx_conf_file = (u_char*)"nginx.conf";
 static u_char      *ngx_conf_params;
 static char        *ngx_signal;
 
@@ -207,6 +209,3 @@ main(int argc, char *const *argv)
 	ngx_log_stderr(0, "libngx.a test");
 	return 0;
 }
-    
-
-	

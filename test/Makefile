@@ -25,12 +25,19 @@ CPPFLAGS=-g \
 INCPATH=-I. \
   -I./include \
   -I./ \
-  -I../
+  -I../ \
+  -I/home/zmkeil/nginx/tengine/objs/ \
+  -I/home/zmkeil/nginx/tengine/src/core/ \
+  -I/home/zmkeil/nginx/tengine/src/event/ \
+  -I/home/zmkeil/nginx/tengine/src/event/modules/ \
+  -I/home/zmkeil/nginx/tengine/src/os/unix/ \
+  -I/home/zmkeil/nginx/tengine/src/proc/
 LIBPATH=-L. \
-  -L/usr/local/lib
-LDFLAGS=-lpthread -lprotobuf
+  -L/usr/local/lib \
+  -L/home/zmkeil/nginx/tengine/objs/
+LDFLAGS=-lngx -lprotobuf -lpthread -lssl -lcrypto -ldl
 
-#
+
 # ##########
 # files
 # ##########
@@ -38,9 +45,10 @@ LDFLAGS=-lpthread -lprotobuf
 PROTO=echo.proto
 
 objs=test_service.o \
-	 echo.pb.o
+	 echo.pb.o \
+	 test_ngx.o
 
-testbin=test_service
+testbin=test_service test_ngx
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -71,6 +79,8 @@ pb_c:
 test_service:test_service.o echo.pb.o
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_service $(LDFLAGS)
 
+test_ngx:test_ngx.o
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_ngx $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc
