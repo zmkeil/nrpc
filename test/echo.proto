@@ -1,0 +1,15 @@
+package test.nrpc;
+
+message EchoRequest {
+	required string msg = 1;
+}
+
+message EchoResponse {
+	required string res = 1;
+}
+
+service EchoService {
+	rpc Echo(EchoRequest) returns (EchoResponse);
+}
+
+option cc_generic_services = true; // ensure generate service code
