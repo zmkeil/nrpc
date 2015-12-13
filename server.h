@@ -7,31 +7,24 @@
   Express : 
   
  **********************************************/
+
+#include <vector>
 #include <string>
-#include <map>
-#include <google/protobuf/service.h>                // google::protobuf::Service
-#include <google/protobuf/descriptor.h>
+#include "service_set.h"
 
 namespace nrpc {
-
-struct ServiceProperty {
-	google::protobuf::Service* service;
-};
-typedef std::map<std::string, ServiceProperty> ServiceMap;
-
-struct MethodProperty {
-	google::protobuf::Service* service;
-	const google::protobuf::MethodDescriptor* method;
-};
-typedef std::map<std::string, MethodProperty> MethodMap;
 
 class Server {
 public:
 	Server();
 	~Server();
 
-	// Start server
-	int start(/*ip:port*/);
+    // new ServiceSet, and push_back to service_sets
+    ServiceSet* push_service_set(const std::string& str_address
+                    /*host:port:bind:wildcard:so_keepalive*/);
+
+    // Start server
+    int start();
 
 	// Stop server
 	int stop();
@@ -39,24 +32,8 @@ public:
 	// Join all processor after server.stop()
 	int join();
 
-
-	// Add service
-	int add_service(google::protobuf::Service* service);
-
-	// Remove service
-    int remove_service(google::protobuf::Service* service);
-
-	// Find a service by its ServiceDescriptor::name().
-	google::protobuf::Service* find_service_by_name(const std::string& name) const;
-
-	// Find methodProperty by full_name, then can access methodDescriptor and service
-	const MethodProperty* find_method_property_by_full_name(const std::string& full_name) const;
-
 private:
-	// <service->name(), ServiceProperty>
-	ServiceMap _service_map;
-	// <method->full_name(), MethodProperty>
-	MethodMap _method_map;
+    std::vector<ServiceSet*> _service_sets;
 };
 
 }

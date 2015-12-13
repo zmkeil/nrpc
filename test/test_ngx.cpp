@@ -1,5 +1,4 @@
 
-
 extern "C" {
 #include <nginx.h>
 #include <ngx_config.h>
@@ -9,24 +8,10 @@ extern "C" {
 }
 
 struct ngx_nrpc_listen_s {
-    u_char str_address[50];    
-//    u_char                  sockaddr[NGX_SOCKADDRLEN];
-//    socklen_t               socklen;
-//
-//    unsigned                bind:1;
-//    unsigned                wildcard:1;
-//#if (NGX_SOCKS_SSL)
-//    unsigned                ssl:1;
-//#endif
-//#if (NGX_HAVE_INET6 && defined IPV6_V6ONLY)
-//    unsigned                ipv6only:2;
-//#endif
-//    unsigned                so_keepalive:2;
-//#if (NGX_HAVE_KEEPALIVE_TUNABLE)
-//    int                     tcp_keepidle;
-//    int                     tcp_keepintvl;
-//    int                     tcp_keepcnt;
-//#endif
+    u_char                  str_address[50];
+    unsigned                so_keepalive:2;
+    unsigned                bind:1;
+    unsigned                wildcard:1;
 };
 typedef struct ngx_nrpc_listen_s ngx_nrpc_listen_t;
 
@@ -213,8 +198,8 @@ int main(int argc, char** argv)
     ngx_add_nrpc_listen(address);
 
     // start ngx_event, in server.start
-	ngx_start(argc, argv);
+    ngx_start(argc, argv);
 
-	return 0;
+    return 0;
 }
 
