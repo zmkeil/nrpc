@@ -24,8 +24,18 @@ CPPFLAGS=-g \
 #  -Werror 
 INCPATH=-I. \
   -I./include \
+  -I./ \
+  -I./nginx/include/objs/ \
+  -I./nginx/include/core/ \
+  -I./nginx/include/event/ \
+  -I./nginx/include/event/modules/ \
+  -I./nginx/include/os/unix/ \
+  -I./nginx/include/proc/
 
-objs=server.o
+objs=ngx_nrpc_module.o \
+	 protocol.o \
+	 server.o \
+	 service_set.o
 
 .PHONY:all
 all:libnrpc.a UT
@@ -49,13 +59,13 @@ libnrpc.a:$(objs)
 	ar rcs libnrpc.a $(objs)
 
 $(objs): %.o: %.cpp
-	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mobjs[0m']"
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) -c $(INCPATH) $(CPPFLAGS) $(CXXFLAGS)  -o $@ $<
 
 
 # UT
 UT:
-	@echo "[^[[1;32;40mCOMAKE:BUILD^[[0m][Target:'^[[1;32;40mUT^[[0m']"
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mtest[0m']"
 	make -C test all
 
 endif #ifeq ($(shell uname -m),x86_64)

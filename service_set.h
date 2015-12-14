@@ -2,11 +2,13 @@
 /***********************************************
   File name		: service_set.h
   Create date	: 2015-12-02 22:04
-  Modified date : 2015-12-04 00:41
+  Modified date : 2015-12-14 02:20
   Author		: zmkeil, alibaba.inc
   Express : 
   
  **********************************************/
+#ifndef NRCP_SERVICE_SET_H
+#define NRCP_SERVICE_SET_H
 
 #include <vector>
 #include <string>
@@ -33,6 +35,8 @@ struct MethodProperty {
 	const google::protobuf::MethodDescriptor* method;
 };
 typedef std::map<std::string, MethodProperty> MethodMap;
+
+class Server;
 
 class ServiceSet {
 public:
@@ -66,3 +70,4 @@ private:
 };
 
 }
+#endif

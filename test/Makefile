@@ -26,29 +26,31 @@ INCPATH=-I. \
   -I./include \
   -I./ \
   -I../ \
-  -I/home/zmkeil/nginx/tengine/objs/ \
-  -I/home/zmkeil/nginx/tengine/src/core/ \
-  -I/home/zmkeil/nginx/tengine/src/event/ \
-  -I/home/zmkeil/nginx/tengine/src/event/modules/ \
-  -I/home/zmkeil/nginx/tengine/src/os/unix/ \
-  -I/home/zmkeil/nginx/tengine/src/proc/
+  -I../nginx/include/objs/ \
+  -I../nginx/include/core/ \
+  -I../nginx/include/event/ \
+  -I../nginx/include/event/modules/ \
+  -I../nginx/include/os/unix/ \
+  -I../nginx/include/proc/
 LIBPATH=-L. \
+  -L../ \
   -L/usr/local/lib \
-  -L/home/zmkeil/nginx/tengine/objs/
-LDFLAGS=-lngx -lprotobuf -lpthread -lssl -lcrypto -ldl
+  -L../nginx/lib/
+LDFLAGS=-Xlinker "-(" -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
 # ##########
 # files
 # ##########
 
-PROTO=echo.proto
+PROTO=echo
 
 objs=test_service.o \
 	 echo.pb.o \
-	 test_ngx.o
+	 test_ngx_start.o
 
-testbin=test_service test_ngx
+testbin=test_service \
+		test_ngx_start
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -69,18 +71,30 @@ love:
 	@echo "make love done"
 
 pb_c:
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mpb_c[0m']"
 	@for pb in $(PROTO); \
-		do \
-		echo "protoc --cpp_out=./ $$pb"; \
-		( protoc --cpp_out=./ $$pb ) || exit 1; \
-		done
+	do \
+		if [ -f $$pb.pb.cc ]; then \
+			timeold=`stat $$pb.pb.cc | grep -i Modify`; \
+			timenew=`stat $$pb.proto | grep -i Modify`; \
+			if [ timenew -lt timeold ]; then \
+				echo "protoc --cpp_out=./ $$pb.proto"; \
+				( protoc --cpp_out=./ $$pb.proto ) || exit 1; \
+			fi \
+		else \
+			echo "protoc --cpp_out=./ $$pb.proto"; \
+			( protoc --cpp_out=./ $$pb.proto ) || exit 1; \
+		fi \
+	done
 
 # UT
 test_service:test_service.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_service $(LDFLAGS)
 
-test_ngx:test_ngx.o
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_ngx $(LDFLAGS)
+test_ngx_start:test_ngx_start.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_ngx_start $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc

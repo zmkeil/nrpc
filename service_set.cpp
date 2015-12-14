@@ -67,5 +67,4 @@ const MethodProperty* ServiceSet::find_method_property_by_full_name(const std::s
 	return NULL;
 }
 
-
 }

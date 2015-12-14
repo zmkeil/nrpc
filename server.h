@@ -2,11 +2,13 @@
 /***********************************************
   File name		: server.h
   Create date	: 2015-12-02 22:04
-  Modified date : 2015-12-04 00:41
+  Modified date : 2015-12-14 00:11
   Author		: zmkeil, alibaba.inc
   Express : 
   
  **********************************************/
+#ifndef NRPC_SERVER_H
+#define NRPC_SERVER_H
 
 #include <vector>
 #include <string>
@@ -24,7 +26,7 @@ public:
                     /*host:port:bind:wildcard:so_keepalive*/);
 
     // Start server
-    int start();
+    int start(int argc, char** argv);
 
 	// Stop server
 	int stop();
@@ -37,3 +39,4 @@ private:
 };
 
 }
+#endif
