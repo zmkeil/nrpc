@@ -2,7 +2,7 @@
 /***********************************************
   File name		: service_set.h
   Create date	: 2015-12-02 22:04
-  Modified date : 2015-12-14 02:20
+  Modified date : 2015-12-15 23:54
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -32,7 +32,7 @@ typedef std::map<std::string, ServiceProperty> ServiceMap;
 
 struct MethodProperty {
 	google::protobuf::Service* service;
-	const google::protobuf::MethodDescriptor* method;
+	const google::protobuf::MethodDescriptor* method_descriptor;
 };
 typedef std::map<std::string, MethodProperty> MethodMap;
 
@@ -40,23 +40,26 @@ class Server;
 
 class ServiceSet {
 public:
+    ServiceSet();
 	ServiceSet(Server* server);
 	~ServiceSet() {};
 
 	// init address of the service_set 
-	int set_address(ServiceAddress* service_address);
+	void set_address(ServiceAddress* service_address);
 
 	// Add service
-	int add_service(google::protobuf::Service* service);
+	bool add_service(google::protobuf::Service* service);
 
 	// Remove service
-    int remove_service(google::protobuf::Service* service);
+    bool remove_service(google::protobuf::Service* service);
 
-	// Find a service by its ServiceDescriptor::name().
-	google::protobuf::Service* find_service_by_name(const std::string& name) const;
+	// Find a serviceProperty by its ServiceDescriptor::name().
+	const ServiceProperty* find_service_by_name(const std::string& service_name);
 
 	// Find methodProperty by full_name, then can access methodDescriptor and service
-	const MethodProperty* find_method_property_by_full_name(const std::string& full_name) const;
+	const MethodProperty* find_method_property_by_full_name(const std::string& method_full_name);
+
+    void dump(std::string *message);
 
 private:
 	// <service->name(), ServiceProperty>
