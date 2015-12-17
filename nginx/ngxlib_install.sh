@@ -24,7 +24,7 @@ echo ""
 echo "======="
 echo "cd ${NGX_ROOT}/objs"
 cd ${NGX_ROOT}/objs
-echo "modify objs/Makefile"
+echo "modify objs/Makefile and objs/ngx_modules.c"
 sed -i 's/-Werror //g' ./Makefile
 sed -i 's/objs\/nginx:	objs/objs\/libngx.a:	objs/g' ./Makefile
 sed -i 's/LINK =.*/AR = ar -rcs/g' ./Makefile
@@ -32,6 +32,7 @@ sed -i 's/LINK/AR/g' ./Makefile
 sed -i 's/-o objs\/nginx/objs\/libngx.a/g' ./Makefile
 sed -i 's/	objs\/ngx_modules\.o \\/	objs\/ngx_modules.o/g' ./Makefile
 sed -i 's/-lpthread.*//g' ./Makefile
+sed -i 's/NULL/NULL,\n    NULL/g' ./ngx_modules.c
 
 echo ""
 echo "======="

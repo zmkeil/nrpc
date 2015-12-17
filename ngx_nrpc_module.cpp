@@ -106,8 +106,8 @@ static char *ngx_nrpc_block(ngx_conf_t *cf, ngx_command_t* /*cmd*/, void* /*conf
     ngx_str_t               url;
     ngx_url_t                   u;
 
-    ngx_conf_log_error(NGX_LOG_EMERG, cf, 0,
-            "in nrpc block");
+    ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0,
+            "Parse nrpc block");
 
     // TODO: parse inside the nrpc{} block
     // Now nothing in nrpc{}, this is just needed by BLOCK_DIRECTIVE
@@ -134,7 +134,7 @@ static char *ngx_nrpc_block(ngx_conf_t *cf, ngx_command_t* /*cmd*/, void* /*conf
             }
         }
 
-        ngx_conf_log_error(NGX_LOG_EMERG, cf, 0, "add listen port is: %d", u.port);
+        ngx_conf_log_error(NGX_LOG_NOTICE, cf, 0, "Add listen port [%d]", u.port);
 
         ls = ngx_create_listening(cf, (struct sockaddr *)u.sockaddr, u.socklen);
         if (ls == NULL) {

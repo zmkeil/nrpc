@@ -2,19 +2,20 @@
 /***********************************************
   File name		: server.cpp
   Create date	: 2015-12-02 22:46
-  Modified date : 2015-12-14 01:10
+  Modified date : 2015-12-18 02:37
   Author		: zmkeil, alibaba.inc
   Express : 
   
  **********************************************/
-extern "C" {
-#include <nginx.h>
-}
+
+#include <iostream>
 #include "server.h"
 #include "service_set.h"
 #include "ngx_nrpc_module.h"
 
 namespace nrpc {
+
+ngx_log_t* Server::_s_error_log = NULL;
 
 /* 
  * Now server must be single,
@@ -23,15 +24,25 @@ namespace nrpc {
  */ 
 Server::Server()
 {
+}
+
+Server::~Server()
+{
+}
+
+bool Server::init()
+{
     // add nrpc module, in server.construct
     ngx_extern_modules[0] = &ngx_nrpc_module;
     ngx_extern_module_names[0] = (u_char*)"nrpc";
     // clear all listen before
     ngx_nrpc_clear_listen();
-}
 
-Server::~Server()
-{
+    if (ngx_pre_init(&_s_error_log) != 0) {
+        std::cout << "ngx_pre_init failed" << std::endl;
+        return false;
+    }
+    return true;
 }
 
 ServiceSet* Server::push_service_set(const std::string& str_address)
@@ -46,7 +57,7 @@ ServiceSet* Server::push_service_set(const std::string& str_address)
     return service_set;
 }
 
-int Server::start(int argc, char** argv)
+int Server::start()
 {
     // initialize input_handler, only one now. 
 	// TODO: support mutiple-policys, realize an adaptor
@@ -56,7 +67,7 @@ int Server::start(int argc, char** argv)
 //	handler.name = "nrpc";
 //	handler.arg = this;
 
-    ngx_start(argc, argv);
+    ngx_start();
 	return 0;
 }
 

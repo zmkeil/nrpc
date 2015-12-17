@@ -206,14 +206,13 @@ static char        *ngx_signal;
 
 static char **ngx_os_environ;
 
-int
-ngx_start(int argc, char *const *argv)
-{
-	ngx_int_t         i;
-    ngx_log_t        *log;
-    ngx_cycle_t      *cycle, init_cycle;
-    ngx_core_conf_t  *ccf;
+static char *nrpc_argv[1];
+static char *nrpc_bin_name = "undefine";
 
+static ngx_cycle_t     init_cycle;
+
+int ngx_pre_init(ngx_log_t **log)
+{
 	ngx_log_stderr(0, "pre init: \n"
 			"\tdebug_init()\n"
 			"\tstrerror_init()\n"
@@ -230,35 +229,39 @@ ngx_start(int argc, char *const *argv)
         return 1;
     }
 
-	if (ngx_get_options(argc, argv) != NGX_OK) {
-		return 1;
-	}
-
 	ngx_time_init();
 
     ngx_pid = ngx_getpid();
 
-    log = ngx_log_init(ngx_prefix);
-    if (log == NULL) {
+    *log = ngx_log_init(ngx_prefix);
+    if (*log == NULL) {
         return 1;
 	}
 
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
-    init_cycle.log = log;
+    init_cycle.log = *log;
     ngx_cycle = &init_cycle;
 
-    init_cycle.pool = ngx_create_pool(1024, log);
+    init_cycle.pool = ngx_create_pool(1024, *log);
     if (init_cycle.pool == NULL) {
         return 1;
     }
 
-    if (ngx_save_argv(&init_cycle, argc, argv) != NGX_OK) {
+    nrpc_argv[0] = ngx_alloc(sizeof(nrpc_bin_name), init_cycle.log);
+    (void) ngx_cpystrn((u_char *) nrpc_argv[0], (u_char *) nrpc_bin_name, sizeof(nrpc_bin_name));
+    if (ngx_save_argv(&init_cycle, 1, nrpc_argv) != NGX_OK) {
         return 1;
     }
 
-    if (ngx_process_options(&init_cycle) != NGX_OK) {
-        return 1;
-    }
+    return 0;
+}
+
+int
+ngx_start()
+{
+	ngx_int_t         i;
+    ngx_cycle_t      *cycle;
+    ngx_core_conf_t  *ccf;
 
 	ngx_log_stderr(0, "really init:\n"
 			"\tos_init(log)\n"
@@ -268,7 +271,11 @@ ngx_start(int argc, char *const *argv)
 			"\tinit_cycle(&init_cycle), CORE: parse config, init modules, \n"
 			"\t\tpaths, files, sh_memory, listening, connections_queue, open socket");
 
-    if (ngx_os_init(log) != NGX_OK) {
+    if (ngx_process_options(&init_cycle) != NGX_OK) {
+        return 1;
+    }
+
+    if (ngx_os_init(ngx_cycle->log) != NGX_OK) {
         return 1;
     }
 
@@ -346,8 +353,8 @@ ngx_start(int argc, char *const *argv)
         return 1;
     }
 
-    if (log->file->fd != ngx_stderr) {
-        if (ngx_close_file(log->file->fd) == NGX_FILE_ERROR) {
+    if (cycle->log->file->fd != ngx_stderr) {
+        if (ngx_close_file(cycle->log->file->fd) == NGX_FILE_ERROR) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           ngx_close_file_n " built-in log failed");
         }

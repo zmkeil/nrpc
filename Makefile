@@ -33,6 +33,7 @@ INCPATH=-I. \
   -I./nginx/include/proc/
 
 objs=ngx_nrpc_module.o \
+	 log.o \
 	 protocol.o \
 	 server.o \
 	 service_set.o

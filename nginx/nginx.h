@@ -22,7 +22,8 @@
 #define NGINX_VAR          "NGINX"
 #define NGX_OLDPID_EXT     ".oldbin"
 
-int ngx_start(int argc, char *const *argv);
+int ngx_pre_init(ngx_log_t **log);
+int ngx_start();
 extern ngx_module_t* ngx_extern_modules[];
 extern u_char* ngx_extern_module_names[];
 
