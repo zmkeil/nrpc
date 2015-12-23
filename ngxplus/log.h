@@ -2,15 +2,15 @@
 /***********************************************
   File name		: log.h
   Create date	: 2015-12-17 23:12
-  Modified date : 2015-12-18 02:28
+  Modified date : 2015-12-24 01:38
   Author		: zmkeil, alibaba.inc
   Express : 
     Usually, log module is first inited,
     if error, write into stderr
   
  **********************************************/
-#ifndef NGXPLUS_LOG
-#define NGXPLUS_LOG
+#ifndef NGXPLUS_LOG_H
+#define NGXPLUS_LOG_H
 
 extern "C" {
 #include <ngx_config.h>

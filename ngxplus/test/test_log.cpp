@@ -3,8 +3,8 @@
 
 int main()
 {
-    char* name = "zmkeil";
-    char* hello = "hello";
+    const char* name = "zmkeil";
+    const char* hello = "hello";
 
     ngxplus::Log log;
     log.init("t1.log");

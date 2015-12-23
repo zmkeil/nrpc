@@ -2,16 +2,13 @@
 #include <string>
 #include "ngx_nrpc_module.h"
 #include "server.h"
-#include "log.h"
+#include "info_log_context.h"
 
-int main(int argc, char** argv)
+int main()
 {
     nrpc::Server server;
-    if (!server.init()) {
-        return -1;
-    }
 
-    LOG(NOTICE, 0, "init server success, now we can use Components based on nginx");
+    LOG(NGX_LOG_LEVEL_NOTICE, "init server success, now we can use Components based on nginx");
 
     nrpc::ServiceSet* service_set = server.push_service_set("*:8833");
     service_set = server.push_service_set("*:8899");

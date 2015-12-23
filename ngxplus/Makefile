@@ -7,7 +7,8 @@ CXXFLAGS=-g \
   -pipe \
   -W \
   -Wall \
-  -fPIC
+  -fPIC \
+  -std=c++11
 CFLAGS=-g \
   -pipe \
   -W \
@@ -44,7 +45,7 @@ all:libngxplus.a
 clean:
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mclean[0m']"
 	rm -rf $(objs)
-	rm -rf libngxplusc.a
+	rm -rf libngxplus.a
 	make -C test clean
 
 .PHONY:love

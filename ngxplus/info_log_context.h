@@ -2,17 +2,19 @@
 #define NGXPLUS_INFO_LOG_CONTEXT
 
 #include "log.h"
+#include "timer.h"
 
 /*
  * InfoLogContext is based Log, this is used to info Runtime Messages,
  * by default, this is flushed into logs/error.log
  */
 
-namespace ngxplus {
-
 #define LOG(_level_, _fmt_, args...)                                        \
-    ngxplus::InfoLogContext::get_context()->log(_level_, "[%s:%d][%s] "  \
-            _fmt_, __FILE__, __LINE__, __FUNCTION__, ##args)            \
+    ngxplus::InfoLogContext::get_context()->log(_level_, "%s [%s:%d][%s] "  \
+            _fmt_, ngxplus::Timer::get_time().c_str(), __FILE__, __LINE__,  \
+            __FUNCTION__, ##args)                                           \
+
+namespace ngxplus {
 
 class InfoLogContext;
 extern InfoLogContext* info_log_context;

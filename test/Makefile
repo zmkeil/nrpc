@@ -31,12 +31,14 @@ INCPATH=-I. \
   -I../nginx/include/event/ \
   -I../nginx/include/event/modules/ \
   -I../nginx/include/os/unix/ \
-  -I../nginx/include/proc/
+  -I../nginx/include/proc/ \
+  -I../ngxplus/
 LIBPATH=-L. \
   -L../ \
   -L/usr/local/lib \
-  -L../nginx/lib/
-LDFLAGS=-Xlinker "-(" -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
+  -L../nginx/lib/ \
+  -L../ngxplus/
+LDFLAGS=-Xlinker "-(" -lngxplus -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
 # ##########

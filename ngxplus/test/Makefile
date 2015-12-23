@@ -35,7 +35,7 @@ LIBPATH=-L. \
   -L../ \
   -L/usr/local/lib \
   -L../../nginx/lib/
-LDFLAGS=-lngx -lngxplus -lprotobuf -lpthread -lssl -lcrypto -ldl
+LDFLAGS=-Xlinker "-(" -lngx -lngxplus -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
 # ##########
@@ -45,10 +45,12 @@ LDFLAGS=-lngx -lngxplus -lprotobuf -lpthread -lssl -lcrypto -ldl
 PROTO=
 
 objs=test_open_file.o \
-     test_log.o
+     test_log.o \
+	 test_timer.o
 
 testbin=test_open_file \
-        test_log
+        test_log \
+		test_timer
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -93,6 +95,10 @@ test_log:test_log.o
 test_open_file:test_open_file.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_open_file $(LDFLAGS)
+
+test_timer:test_timer.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_timer $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc

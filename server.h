@@ -24,20 +24,12 @@ extern "C" {
 #define ALERT NGX_LOG_ALERT
 #define EMERG NGX_LOG_EMERG
 
-// used after server.init()
-#define LOG(_level_, _err_, _fmt_, args...)                                \
-    ngx_log_error(_level_, nrpc::Server::_s_error_log, _err_,              \
-            "[%s:%d][%s]: " _fmt_, __FILE__,                               \
-            __LINE__, __FUNCTION__, ##args);
-
 namespace nrpc {
 
 class Server {
 public:
 	Server();
 	~Server();
-
-    bool init();
 
     // new ServiceSet, and push_back to service_sets
     ServiceSet* push_service_set(const std::string& str_address

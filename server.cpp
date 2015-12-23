@@ -2,7 +2,7 @@
 /***********************************************
   File name		: server.cpp
   Create date	: 2015-12-02 22:46
-  Modified date : 2015-12-18 02:37
+  Modified date : 2015-12-24 00:12
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -15,8 +15,6 @@
 
 namespace nrpc {
 
-ngx_log_t* Server::_s_error_log = NULL;
-
 /* 
  * Now server must be single,
  * because ngx_nrpc_module use global
@@ -24,25 +22,15 @@ ngx_log_t* Server::_s_error_log = NULL;
  */ 
 Server::Server()
 {
-}
-
-Server::~Server()
-{
-}
-
-bool Server::init()
-{
     // add nrpc module, in server.construct
     ngx_extern_modules[0] = &ngx_nrpc_module;
     ngx_extern_module_names[0] = (u_char*)"nrpc";
     // clear all listen before
     ngx_nrpc_clear_listen();
+}
 
-    if (ngx_pre_init(&_s_error_log) != 0) {
-        std::cout << "ngx_pre_init failed" << std::endl;
-        return false;
-    }
-    return true;
+Server::~Server()
+{
 }
 
 ServiceSet* Server::push_service_set(const std::string& str_address)
@@ -59,6 +47,11 @@ ServiceSet* Server::push_service_set(const std::string& str_address)
 
 int Server::start()
 {
+    if (ngx_pre_init() != 0) {
+        std::cout << "ngx_pre_init failed" << std::endl;
+        return -1;
+    }
+
     // initialize input_handler, only one now. 
 	// TODO: support mutiple-policys, realize an adaptor
 //	InputMessageHandler handler;

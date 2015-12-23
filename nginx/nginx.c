@@ -211,8 +211,10 @@ static char *nrpc_bin_name = "undefine";
 
 static ngx_cycle_t     init_cycle;
 
-int ngx_pre_init(ngx_log_t **log)
+int ngx_pre_init()
 {
+    ngx_log_t* log;
+
 	ngx_log_stderr(0, "pre init: \n"
 			"\tdebug_init()\n"
 			"\tstrerror_init()\n"
@@ -233,16 +235,16 @@ int ngx_pre_init(ngx_log_t **log)
 
     ngx_pid = ngx_getpid();
 
-    *log = ngx_log_init(ngx_prefix);
-    if (*log == NULL) {
+    log = ngx_log_init(ngx_prefix);
+    if (log == NULL) {
         return 1;
 	}
 
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
-    init_cycle.log = *log;
+    init_cycle.log = log;
     ngx_cycle = &init_cycle;
 
-    init_cycle.pool = ngx_create_pool(1024, *log);
+    init_cycle.pool = ngx_create_pool(1024, log);
     if (init_cycle.pool == NULL) {
         return 1;
     }
