@@ -24,20 +24,21 @@ CPPFLAGS=-g \
 #  -Werror 
 INCPATH=-I. \
   -I./include \
-  -I./ \
-  -I../ \
+  -I../src/ \
   -I../nginx/include/objs/ \
   -I../nginx/include/core/ \
   -I../nginx/include/event/ \
   -I../nginx/include/event/modules/ \
   -I../nginx/include/os/unix/ \
   -I../nginx/include/proc/ \
-  -I../ngxplus/
-LIBPATH=-L. \
-  -L../ \
-  -L/usr/local/lib \
+  -I../ngxplus/ \
+  -I../../common/
+LIBPATH=-L/usr/local/lib \
+  -L. \
+  -L../src/ \
   -L../nginx/lib/ \
-  -L../ngxplus/
+  -L../ngxplus/ \
+  -L../../common/
 LDFLAGS=-Xlinker "-(" -lngxplus -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
