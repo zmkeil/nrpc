@@ -37,7 +37,7 @@ LIBPATH=-L. \
   -L/usr/local/lib \
   -L../../nginx/lib/ \
   -L../../../common/
-LDFLAGS=-lngx -lngxplus -lcommon -lprotobuf -lpthread -lssl -lcrypto -ldl
+LDFLAGS=-lngxplus -lngx -lcommon -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
 # ##########

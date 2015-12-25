@@ -39,7 +39,8 @@ LIBPATH=-L/usr/local/lib \
   -L../nginx/lib/ \
   -L../ngxplus/ \
   -L../../common/
-LDFLAGS=-Xlinker "-(" -lngxplus -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
+#LDFLAGS=-Xlinker "-(" -lngxplus -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
+LDFLAGS=-lnrpc -lngxplus -lngx -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
 # ##########
