@@ -30,11 +30,13 @@ INCPATH=-I. \
   -I../nginx/include/event/ \
   -I../nginx/include/event/modules/ \
   -I../nginx/include/os/unix/ \
-  -I../nginx/include/proc/
+  -I../nginx/include/proc/ \
+  -I../../common/
 
 objs=open_file.o \
      log.o \
-     info_log_context.o
+     info_log_context.o \
+     iobuf.o
 
 .PHONY:all
 all:libngxplus.a

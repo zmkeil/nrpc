@@ -211,6 +211,8 @@ static char *nrpc_bin_name = "undefine";
 
 static ngx_cycle_t     init_cycle;
 
+int NGX_PREINIT_FLAG = 0;
+
 int ngx_pre_init()
 {
     ngx_log_t* log;
@@ -255,6 +257,7 @@ int ngx_pre_init()
         return 1;
     }
 
+    NGX_PREINIT_FLAG = 1;
     return 0;
 }
 

@@ -8,6 +8,9 @@
   
  **********************************************/
 
+extern "C" {
+#include <nginx.h>
+}
 #include "common.h"
 #include "time.h"
 
@@ -21,17 +24,21 @@ class Timer
 public:
     virtual ~Timer();
 
-    static std::string get_time() {
-        char buf[MAX_TIME_LEN] = {'\0'};
+    static char* ngx_asctime() {
+        char* result;
         time_t rawtime;
         struct tm * timeinfo;
 
-        time(&rawtime);
+        if (!NGX_PREINIT_FLAG) {
+            time(&rawtime);
+        } else {
+            rawtime = ngx_time();
+        }
         timeinfo = localtime(&rawtime);
-        asctime_r(timeinfo, buf);
-
-        buf[strlen(buf) - 1] = '\0';
-        return std::string(buf);
+        // result point to a static mem
+        result = asctime(timeinfo);
+        result[strlen(result)-1] = '\0';
+        return result;
     }
 
 private:

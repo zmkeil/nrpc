@@ -56,7 +56,7 @@ bool Log::init(const std::string& log_name)
     _file.fd = ngx_open_file(file_name.c_str(), NGX_FILE_APPEND,
             NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS);
     if (_file.fd == NGX_INVALID_FILE) {
-        ngx_log_stderr(0, "[alert] could not open error log file: \"s\"",
+        ngx_log_stderr(0, "[alert] could not open error log file: \"%s\"",
                 file_name.c_str());
         return false;
     }
