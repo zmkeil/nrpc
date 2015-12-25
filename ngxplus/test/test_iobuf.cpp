@@ -7,10 +7,10 @@ inline void info_string(std::string& str)
 
 int main()
 {
-    ngxplus::IOBuf iobuf(1024);
+    ngxplus::IOBuf iobuf(768);
     char* buf;
 
-    ssize_t size = iobuf.alloc(&buf, 10, ngxplus::IOBUF_ALLOC_EXACT);
+    ssize_t size = iobuf.alloc(&buf, 300, ngxplus::IOBUF_ALLOC_EXACT);
     std::cout << "palloc size: " << size << std::endl;
 
     size = iobuf.alloc(&buf, 512, ngxplus::IOBUF_ALLOC_EXACT);
@@ -20,10 +20,9 @@ int main()
     std::cout << "palloc size: " << size << std::endl;
 
     std::string info;
-    info_string(info);
     info.reserve(1024);
-    info_string(info);
     iobuf.dump_info(&info);
+    std::cout << info << std::endl;
 
     return 0;
 }

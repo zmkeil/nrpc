@@ -74,8 +74,9 @@ void IOBuf::print()
 
 void IOBuf::dump_info(std::string* info)
 {
-    while (_pool)  
-    {  
+    ngx_pool_t* p = _pool;
+    while (_pool)
+    {
         common::string_appendf(info, "_pool = 0x%x\n", _pool);  
         common::string_appendf(info, "  .d\n");  
         common::string_appendf(info, "    .last = 0x%x\n", _pool->d.last);  
@@ -91,6 +92,7 @@ void IOBuf::dump_info(std::string* info)
         common::string_appendf(info, "available _pool memory = %d\n\n", _pool->d.end - _pool->d.last);  
         _pool = _pool->d.next;  
     }
+    _pool = p;
 }
 
 }
