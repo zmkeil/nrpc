@@ -49,12 +49,14 @@ PROTO=
 objs=test_open_file.o \
      test_log.o \
 	 test_timer.o \
-     test_iobuf.o
+     test_iobuf.o \
+     test_zero_copy_stream.o
 
 testbin=test_open_file \
         test_log \
 		test_timer \
-        test_iobuf
+        test_iobuf \
+        test_zero_copy_stream
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -107,6 +109,10 @@ test_timer:test_timer.o
 test_iobuf:test_iobuf.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_iobuf $(LDFLAGS)
+
+test_zero_copy_stream:test_zero_copy_stream.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_zero_copy_stream $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc

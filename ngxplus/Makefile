@@ -36,7 +36,8 @@ INCPATH=-I. \
 objs=open_file.o \
      log.o \
      info_log_context.o \
-     iobuf.o
+     iobuf.o \
+     iobuf_zero_copy_stream.o
 
 .PHONY:all
 all:libngxplus.a

@@ -10,31 +10,43 @@ extern "C" {
 
 namespace ngxplus {
  
-enum IOBufAllocType {
-    IOBUF_ALLOC_EXACT = 0,
-    IOBUF_ALLOC_SIMILAR
-};
-
 class IOBuf
 {
+public:
+    enum IOBufAllocType {
+        IOBUF_ALLOC_EXACT = 0,
+        IOBUF_ALLOC_SIMILAR
+    };
+
 public:
     IOBuf();
     IOBuf(size_t size);
     virtual ~IOBuf();
     
     int alloc(char** buf, size_t size, IOBufAllocType type);
+    // MIN_PAYLOAD SIMILAR alloc
+    int alloc(char** buf);
 
-    void print();
+    void reclaim(int count);
+
+    size_t get_byte_count();
+
+    void dump_payload(std::string* payload);
 
     void dump_info(std::string* info);
 
 private:
-    ngx_pool_t* _pool;
-    size_t _size;
+    static const size_t DEFAULT_BLOCK_SIZE = 1024;
+    static const size_t MIN_PAYLOAD_SIZE = 200/* _block_size - 2*sizeof(ngx_pool_t) */;
+    static const size_t MAX_BLOCKS_NUM = 10;
 
 private:
-    static const size_t IOBUF_DEFAULT_SIZE = 1024;
-    static const size_t MIN_BLOCK_SIZE = 200;
+    ngx_pool_t* _pool;
+    size_t _block_size;
+    size_t _blocks/*LE MAX_BLOCKS_NUM*/;
+    size_t _bytes;
+    char* _start_points[MAX_BLOCKS_NUM];
+    char* _read_point;
 };
 
 }
