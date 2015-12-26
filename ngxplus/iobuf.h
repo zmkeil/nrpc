@@ -9,7 +9,7 @@ extern "C" {
 #include "common.h"
 
 namespace ngxplus {
- 
+
 class IOBuf
 {
 public:
@@ -22,12 +22,20 @@ public:
     IOBuf();
     IOBuf(size_t size);
     virtual ~IOBuf();
-    
+
+    // return alloc size
     int alloc(char** buf, size_t size, IOBufAllocType type);
     // MIN_PAYLOAD SIMILAR alloc
     int alloc(char** buf);
 
     void reclaim(int count);
+
+    // return read size
+    int read(const char** data);
+
+    int skip(int count);
+
+    void back(int count);
 
     size_t get_byte_count();
 
@@ -47,6 +55,8 @@ private:
     size_t _bytes;
     char* _start_points[MAX_BLOCKS_NUM];
     char* _read_point;
+    int _read_block;
+    ngx_pool_t* _read_pool;
 };
 
 }

@@ -7,7 +7,8 @@ CXXFLAGS=-g \
   -pipe \
   -W \
   -Wall \
-  -fPIC
+  -fPIC \
+  -std=c++11
 CFLAGS=-g \
   -pipe \
   -W \

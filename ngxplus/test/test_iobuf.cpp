@@ -31,6 +31,6 @@ int main()
     payload.reserve(2048);
     iobuf.dump_payload(&payload);
     std::cout << payload << std::endl;
- 
+
     return 0;
 }

@@ -8,21 +8,21 @@
 
 namespace ngxplus {
 
-//class IOBufAsZeroCopyInputStream
-//{
-//public:
-//    IOBufAsZeroCopyInputStream(IOBuf* buf);
-//    virtual ~IOBufAsZeroCopyInputStream();
-//
-//    // implements ZeroCopyInputStream ----------------------------------
-//    bool Next(const void** data, int* size);
-//    void BackUp(int count);
-//    bool Skip(int count);
-//    int64 ByteCount() const;
-//
-//private:
-//    IOBuf* _buf;
-//}
+class IOBufAsZeroCopyInputStream
+{
+public:
+    IOBufAsZeroCopyInputStream(IOBuf* buf);
+    virtual ~IOBufAsZeroCopyInputStream();
+
+    // implements ZeroCopyInputStream ----------------------------------
+    bool Next(const void** data, int* size);
+    void BackUp(int count);
+    bool Skip(int count);
+    int64_t ByteCount() const;
+
+private:
+    IOBuf* _buf;
+};
 
 class IOBufAsZeroCopyOutputStream : public google::protobuf::io::ZeroCopyOutputStream
 {

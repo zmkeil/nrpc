@@ -9,7 +9,8 @@ namespace ngxplus {
 IOBuf::IOBuf() : _pool(nullptr),
         _block_size(DEFAULT_BLOCK_SIZE),
         _blocks(0),
-        _bytes(0)
+        _bytes(0),
+        _read_block(0)
 {
 }
 
@@ -46,6 +47,7 @@ int IOBuf::alloc(char** buf, size_t size, IOBufAllocType type)
             LOG(NGX_LOG_LEVEL_ALERT, "pool's blocksize [%ld] too small", _block_size);
             return -1;
         }
+        _read_pool = _pool;
     }
 
     if (size == 0) {
@@ -104,6 +106,67 @@ void IOBuf::reclaim(int count)
     _bytes -= count;
 }
 
+int IOBuf::read(const char** data)
+{
+    if (!_read_pool) {
+        LOG(NGX_LOG_LEVEL_ALERT, "no more data in zero_copy_input_stream");
+        return -1;
+    }
+
+    int remain = (char*)_read_pool->d.last - _read_point;
+    if (remain > 0) {
+        *data = _read_point;
+        _read_point += remain;
+        _bytes -= remain;
+        return remain;
+    }
+
+    _read_pool = _read_pool->d.next;
+    if (!_read_pool) {
+        LOG(NGX_LOG_LEVEL_ALERT, "no more data in zero_copy_input_stream");
+        return -1;
+    }
+    *data = _start_points[++_read_block];
+    _read_point = (char*)_read_pool->d.last;
+    remain = _read_point - *data;
+    _bytes -= remain;
+    return remain;
+}
+
+void IOBuf::back(int count)
+{
+    int current_block_read_byte = _read_point - _start_points[_read_block];
+    if (current_block_read_byte < count) {
+        LOG(NGX_LOG_LEVEL_WARN, "back too much, only back this block");
+        count = current_block_read_byte;
+    }
+
+    _read_point -= count;
+    _bytes += count;
+}
+
+int IOBuf::skip(int count)
+{
+    int origin_count = count;
+    while (count) {
+        int current_block_remain_byte = (char*)_read_pool->d.last - _read_point;
+        if (current_block_remain_byte < count) {
+            count -= current_block_remain_byte;
+            _bytes -= current_block_remain_byte;
+            _read_pool = _read_pool->d.next;
+            if (!_read_pool) {
+                return (origin_count - count);
+            }
+            _read_point = _start_points[_read_block++];
+        }
+        count = 0;
+        _read_point += count;
+        _bytes -= count;
+        return origin_count;
+    }
+    return origin_count;
+}
+
 size_t IOBuf::get_byte_count()
 {
     return _bytes;
@@ -112,11 +175,18 @@ size_t IOBuf::get_byte_count()
 void IOBuf::dump_payload(std::string* payload)
 {
     ngx_pool_t* p = _pool;
-    int i = 0;
+    int i;
+    for (i = 0; i < _read_block; ++i) {
+        p = p->d.next;
+    }
+    common::string_appendn(payload, _read_point, (size_t)((char*)p->d.last - _read_point));
+    p = p->d.next;
+    i++;
     while(p) {
         common::string_appendn(payload, _start_points[i],
                 (size_t)((char*)p->d.last - _start_points[i]));
         i++;
+        p = p->d.next;
     }
     return;
 }
