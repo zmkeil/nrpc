@@ -40,7 +40,7 @@ LIBPATH=-L/usr/local/lib \
   -L../ngxplus/ \
   -L../../common/
 #LDFLAGS=-Xlinker "-(" -lngxplus -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
-LDFLAGS=-lnrpc -lngxplus -lngx -lprotobuf -lpthread -lssl -lcrypto -ldl
+LDFLAGS=-lnrpc -lngxplus -lngx -lcommon -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
 # ##########
@@ -51,10 +51,12 @@ PROTO=echo
 
 objs=test_service.o \
 	 echo.pb.o \
-	 test_ngx_start.o
+	 test_ngx_start.o \
+	 test_serialize_parse.o
 
 testbin=test_service \
-		test_ngx_start
+		test_ngx_start \
+		test_serialize_parse
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -99,6 +101,10 @@ test_service:test_service.o echo.pb.o
 test_ngx_start:test_ngx_start.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_ngx_start $(LDFLAGS)
+
+test_serialize_parse:test_serialize_parse.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_serialize_parse $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc

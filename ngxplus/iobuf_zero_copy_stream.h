@@ -8,7 +8,7 @@
 
 namespace ngxplus {
 
-class IOBufAsZeroCopyInputStream
+class IOBufAsZeroCopyInputStream :  public google::protobuf::io::ZeroCopyInputStream
 {
 public:
     IOBufAsZeroCopyInputStream(IOBuf* buf);

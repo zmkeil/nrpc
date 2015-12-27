@@ -109,7 +109,7 @@ void IOBuf::reclaim(int count)
 int IOBuf::read(const char** data)
 {
     if (!_read_pool) {
-        LOG(NGX_LOG_LEVEL_ALERT, "no more data in zero_copy_input_stream");
+        LOG(NGX_LOG_LEVEL_INFO, "no more data in zero_copy_input_stream");
         return -1;
     }
 
@@ -123,10 +123,11 @@ int IOBuf::read(const char** data)
 
     _read_pool = _read_pool->d.next;
     if (!_read_pool) {
-        LOG(NGX_LOG_LEVEL_ALERT, "no more data in zero_copy_input_stream");
+        LOG(NGX_LOG_LEVEL_INFO, "no more data in zero_copy_input_stream");
         return -1;
     }
     *data = _start_points[++_read_block];
+    // maybe 0, no matter, read again
     _read_point = (char*)_read_pool->d.last;
     remain = _read_point - *data;
     _bytes -= remain;

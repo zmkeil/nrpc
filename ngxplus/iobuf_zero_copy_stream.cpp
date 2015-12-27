@@ -15,7 +15,7 @@ IOBufAsZeroCopyInputStream::~IOBufAsZeroCopyInputStream()
 bool IOBufAsZeroCopyInputStream::Next(const void** data, int* size)
 {
     int ret = _buf->read((const char**)data);
-    if (ret > 0) {
+    if (ret >= 0) {
         *size = ret;
         return true;
     }
