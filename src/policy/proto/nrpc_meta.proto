@@ -1,4 +1,5 @@
-package RpcMeta; 
+package nrpc;
+option cc_generic_services = true;
 
 message RpcMeta {
     optional RpcRequestMeta request = 1;
@@ -8,8 +9,6 @@ message RpcMeta {
     //optional int32 attachment_size = 5;
     //optional ChunkInfo chunk_info = 6;
     //optional bytes authentication_data = 7;
-
-    // optional HuluMeta hulu_meta = 100;
 }
 
 message RpcRequestMeta {
@@ -19,13 +18,9 @@ message RpcRequestMeta {
     optional int64 trace_id = 4;
     optional int64 span_id = 5;
     optional int64 parent_span_id = 6;
-
-    // optional HuluRequestMeta hulu_request_meta = 100;
 }
 
 message RpcResponseMeta {
     optional int32 error_code = 1;
     optional string error_text = 2;
-
-    // optional HuluResponseMeta hulu_response_meta = 100;
 }

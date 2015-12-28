@@ -1,4 +1,4 @@
-package test.nrpc;
+package nrpc;
 
 message Student
 {

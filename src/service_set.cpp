@@ -1,8 +1,8 @@
 
 #include <sstream>
 #include <iostream>
+#include "info_log_context.h"
 #include "service_set.h"
-
 
 namespace nrpc {
 ServiceSet::ServiceSet()
@@ -21,13 +21,16 @@ void ServiceSet::set_address(ServiceAddress* service_address)
 bool ServiceSet::add_service(google::protobuf::Service* service)
 {
 	if (!service) {
+        LOG(NGX_LOG_WARN, "add service NULL");
 	    return false;
 	}
     const google::protobuf::ServiceDescriptor* sd = service->GetDescriptor();
 	if (_service_map.find(sd->name()) != _service_map.end()) {
+        LOG(NGX_LOG_WARN, "the service \"%s\" already existed", sd->name().c_str());
 	    return false;
 	}
 	if (!sd->method_count()) {
+        LOG(NGX_LOG_WARN, "the service \"%s\" has no method", sd->name().c_str());
 	    return false;
 	}
 
@@ -35,7 +38,8 @@ bool ServiceSet::add_service(google::protobuf::Service* service)
 	for (int i = 0; i < sd->method_count(); ++i) {
 	    const google::protobuf::MethodDescriptor* md = sd->method(i);
 		const MethodProperty mp = {service, md};
-		_method_map[md->full_name()] = mp;
+        std::string full_name = sd->name() + "_" + md->name();
+		_method_map[full_name] = mp;
 	}
 
 	// add _service_map
@@ -47,8 +51,10 @@ bool ServiceSet::add_service(google::protobuf::Service* service)
 
 bool ServiceSet::remove_service(google::protobuf::Service* service)
 {
+    // TODO: remove_service
+    (void) service;
     // remove all methods from _method_map
-	
+
 	// remove service from _service_map
 
 	return true;

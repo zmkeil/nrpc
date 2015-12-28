@@ -16,8 +16,8 @@
 
 int main()
 {
-    test::nrpc::Student student;
-    test::nrpc::Student student_parse;
+    nrpc::Student student;
+    nrpc::Student student_parse;
     student.set_id("AFDSKO04D31F");
     student.set_name("ZHAOMANG");
     student.set_gender("male");

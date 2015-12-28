@@ -1,8 +1,8 @@
 /***********************************************
   File name		: test_service.cpp
-  Create date	: 2015-12-04 21:29
+  File name		: test_service.cpp
   Modified date : 2015-12-04 22:35
-  Author		: zmkeil, alibaba.inc
+  Modified date : 2015-12-29 00:24
   Express : 
   
  **********************************************/
@@ -16,13 +16,13 @@
 
 using namespace std;
 
-class EchoServiceImpl : public test::nrpc::EchoService {
+class EchoServiceImpl : public nrpc::EchoService {
 public:
 	EchoServiceImpl() {};
 	virtual ~EchoServiceImpl() {};
 	virtual void Echo(google::protobuf::RpcController* cntl_base, 
-			const test::nrpc::EchoRequest* request, 
-			test::nrpc::EchoResponse* response, 
+			const nrpc::EchoRequest* request, 
+			nrpc::EchoResponse* response, 
 			google::protobuf::Closure* done) {
 		std::cout << "in Echo method" << std::endl;
 		return;

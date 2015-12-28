@@ -25,6 +25,8 @@ CPPFLAGS=-g \
 INCPATH=-I. \
   -I./include \
   -I../src/ \
+  -I../src/policy/ \
+  -I../src/policy/proto \
   -I../nginx/include/objs/ \
   -I../nginx/include/core/ \
   -I../nginx/include/event/ \
@@ -52,11 +54,13 @@ PROTO=echo
 objs=test_service.o \
 	 echo.pb.o \
 	 test_ngx_start.o \
-	 test_serialize_parse.o
+	 test_serialize_parse.o \
+	 test_protocol.o
 
 testbin=test_service \
 		test_ngx_start \
-		test_serialize_parse
+		test_serialize_parse \
+		test_protocol
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -105,6 +109,10 @@ test_ngx_start:test_ngx_start.o
 test_serialize_parse:test_serialize_parse.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_serialize_parse $(LDFLAGS)
+
+test_protocol:test_protocol.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_protocol $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc

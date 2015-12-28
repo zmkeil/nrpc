@@ -8,7 +8,7 @@
   
  **********************************************/
 
-#include "protocol.h"
+#include "rpc_session.h"
 
 void ngx_nrpc_init_connection(ngx_connection_t *c)
 {

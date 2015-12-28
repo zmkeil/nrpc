@@ -4,7 +4,7 @@ extern "C" {
 #include <nginx.h>
 }
 #include "service_set.h"
-#include "protocol.h"
+#include "rpc_session.h"
 
 extern ngx_module_t ngx_nrpc_module;
 
