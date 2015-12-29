@@ -10,8 +10,10 @@ ngxplus/test/test_log
 ngxplus/test/test_open_file
 ngxplus/test/test_timer
 ngxplus/test/test_zero_copy_stream
+ngxplus/test/logs/
 
 test/test_ngx_start
 test/test_protocol
 test/test_serialize_parse
 test/test_service
+

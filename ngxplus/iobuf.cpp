@@ -7,7 +7,7 @@
 namespace ngxplus {
 
 IOBuf::IOBuf() : _pool(nullptr),
-        _block_size(DEFAULT_BLOCK_SIZE),
+        _block_size(IOBUF_DEFAULT_BLOCK_SIZE),
         _blocks(0),
         _bytes(0),
         _read_block(0)
@@ -17,12 +17,13 @@ IOBuf::IOBuf() : _pool(nullptr),
 IOBuf::IOBuf(size_t size) : _pool(nullptr),
         _block_size(size),
         _blocks(0),
-        _bytes(0)
+        _bytes(0),
+        _read_block(0)
 {
-    if (size < (MIN_PAYLOAD_SIZE + 2 * sizeof(ngx_pool_t))) {
+    if (size < (IOBUF_MIN_PAYLOAD_SIZE + 2 * sizeof(ngx_pool_t))) {
         LOG(NGX_LOG_LEVEL_WARN, "pool's blocksize [%ld] LT [%ld]",
-                size, MIN_PAYLOAD_SIZE + 2 * sizeof(ngx_pool_t));
-        _block_size = MIN_PAYLOAD_SIZE + 2 * sizeof(ngx_pool_t);
+                size, IOBUF_MIN_PAYLOAD_SIZE + 2 * sizeof(ngx_pool_t));
+        _block_size = IOBUF_MIN_PAYLOAD_SIZE + 2 * sizeof(ngx_pool_t);
     }
 }
 
@@ -43,7 +44,7 @@ int IOBuf::alloc(char** buf, size_t size, IOBufAllocType type)
             LOG(NGX_LOG_LEVEL_ALERT, "create pool [blocksize=%ld] failed", _block_size);
             return -1;
         }
-        if (_pool->max < (MIN_PAYLOAD_SIZE)) {
+        if (_pool->max < (IOBUF_MIN_PAYLOAD_SIZE)) {
             LOG(NGX_LOG_LEVEL_ALERT, "pool's blocksize [%ld] too small", _block_size);
             return -1;
         }
@@ -80,8 +81,8 @@ int IOBuf::alloc(char** buf, size_t size, IOBufAllocType type)
     if (_pool->current->d.next) {
         _pool->current = _pool->current->d.next;
         _start_points[_blocks++] = *buf;
-        if (_blocks > MAX_BLOCKS_NUM) {
-            LOG(NGX_LOG_LEVEL_WARN, "_blocks GT MAX_BLOCKS_NUM"
+        if (_blocks > IOBUF_MAX_BLOCKS_NUM) {
+            LOG(NGX_LOG_LEVEL_WARN, "_blocks GT IOBUF_MAX_BLOCKS_NUM"
                     "try to increase _block_size [%ld]", _block_size);
             return -1;
         }
@@ -92,7 +93,7 @@ int IOBuf::alloc(char** buf, size_t size, IOBufAllocType type)
 
 int IOBuf::alloc(char** buf)
 {
-    return alloc(buf, MIN_PAYLOAD_SIZE, IOBUF_ALLOC_SIMILAR);
+    return alloc(buf, IOBUF_MIN_PAYLOAD_SIZE, IOBUF_ALLOC_SIMILAR);
 }
 
 void IOBuf::reclaim(int count)
@@ -224,12 +225,17 @@ void IOBuf::dump_payload(std::string* payload)
     return;
 }
 
-void IOBuf::print_payload()
+void IOBuf::print_payload(size_t capacity)
 {
     std::string payload;
-    payload.reserve(1024);
+    payload.reserve(capacity);
     dump_payload(&payload);
     std::cout << payload << std::endl;
+}
+
+void IOBuf::print_payload()
+{
+    print_payload(IOBUF_DEFAULT_PAYLOAD_SIZE);
 }
 
 void IOBuf::dump_info(std::string* info)
@@ -257,16 +263,20 @@ void IOBuf::dump_info(std::string* info)
         p = p->d.next;
     }
     common::string_appendf(info, "_read_point = %p\n", _read_point);
-    common::string_appendf(info, "bytes = %zu\n\n", _bytes);
+    common::string_appendf(info, "bytes = %zu\n", _bytes);
 }
 
-void IOBuf::print_info()
+void IOBuf::print_info(size_t capacity)
 {
     std::string info;
-    info.reserve(1024);
+    info.reserve(capacity);
     dump_info(&info);
     std::cout << info << std::endl;
 }
 
+void IOBuf::print_info()
+{
+    print_info(IOBUF_DEFAULT_INFO_SIZE);
+}
 
 }

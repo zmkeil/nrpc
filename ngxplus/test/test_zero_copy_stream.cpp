@@ -14,6 +14,10 @@ int main()
     }
 
     snprintf(buf, size, "hello\n");
+    // _bytes = IOBUF_MIN_PAYLOAD_SIZE
+    iobuf.print_info();
+    iobuf.print_payload();
+    std::cout << std::endl << "-------------------------->" << std::endl;
 
     ngxplus::IOBufAsZeroCopyInputStream zero_copy_in(&iobuf);
     if (!zero_copy_in.Next((const void**)&buf_in, &size)) {
@@ -21,14 +25,8 @@ int main()
         return -1;
     }
 
-    std::string info;
-    info.reserve(1024);
-    iobuf.dump_info(&info);
-    std::cout << info << std::endl;
-
-    std::string payload;
-    payload.reserve(1024);
-    iobuf.dump_payload(&payload);
-    std::cout << "size: " << zero_copy_out.ByteCount() << ", payload: " << payload << std::endl;
+    // _bytes = 0, _read_point == d.last
+    iobuf.print_info();
+    iobuf.print_payload();
     return 0;
 }

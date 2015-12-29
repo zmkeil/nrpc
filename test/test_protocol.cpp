@@ -38,6 +38,7 @@ int main()
     ngxplus::IOBuf iobuf;
     nrpc::default_protocol.pack_request(&iobuf, pmdes, NULL, req);
 
+
     // process request from iobuf
     nrpc::RpcSession* mock_session = new nrpc::RpcSession();
     nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
@@ -45,8 +46,8 @@ int main()
     mock_session->service_set = mock_service_set;
     nrpc::RpcMeta mock_meta;
 
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(&iobuf);
     iobuf.cutn(21/*size of meta_bytes*/);
+    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(&iobuf);
     mock_meta.ParseFromZeroCopyStream(&zero_in_stream);
     std::string mock_meta_string;
     google::protobuf::TextFormat::PrintToString(mock_meta, &mock_meta_string);

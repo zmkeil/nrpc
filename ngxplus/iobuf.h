@@ -45,13 +45,17 @@ public:
 
     void dump_payload(std::string* payload);
     void print_payload();
+    void print_payload(size_t capacity);
     void dump_info(std::string* info);
     void print_info();
+    void print_info(size_t capacity);
 
 private:
-    static const size_t DEFAULT_BLOCK_SIZE = 1024;
-    static const size_t MIN_PAYLOAD_SIZE = 200/* _block_size - 2*sizeof(ngx_pool_t) */;
-    static const size_t MAX_BLOCKS_NUM = 10;
+    static const size_t IOBUF_DEFAULT_BLOCK_SIZE = 1024;
+    static const size_t IOBUF_MIN_PAYLOAD_SIZE = 200/* _block_size - 2*sizeof(ngx_pool_t) */;
+    static const size_t IOBUF_MAX_BLOCKS_NUM = 10;
+    static const size_t IOBUF_DEFAULT_PAYLOAD_SIZE = 1024;
+    static const size_t IOBUF_DEFAULT_INFO_SIZE = 1024;
 
 private:
     ngx_pool_t* _pool;
@@ -59,7 +63,7 @@ private:
     size_t _blocks/*LE MAX_BLOCKS_NUM*/;
     size_t _bytes;
     size_t _cut_remain_bytes;
-    char* _start_points[MAX_BLOCKS_NUM];
+    char* _start_points[IOBUF_MAX_BLOCKS_NUM];
     char* _read_point;
     int _read_block;
     ngx_pool_t* _read_pool;

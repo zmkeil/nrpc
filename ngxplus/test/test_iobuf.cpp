@@ -22,15 +22,8 @@ int main()
     std::cout << "palloc size: " << size << std::endl;
     memset(buf, 'c', size);
 
-    std::string info;
-    info.reserve(1024);
-    iobuf.dump_info(&info);
-    std::cout << info << std::endl;
-
-    std::string payload;
-    payload.reserve(2048);
-    iobuf.dump_payload(&payload);
-    std::cout << payload << std::endl;
+    iobuf.print_info();
+    iobuf.print_payload(2048);
 
     return 0;
 }
