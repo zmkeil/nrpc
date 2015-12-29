@@ -66,7 +66,8 @@ int IOBuf::alloc(char** buf, size_t size, IOBufAllocType type)
         size = std::min((long)size, remain);
     }
     //LOG(NGX_LOG_LEVEL_NOTICE, "alloc size %ld", size);
-    *buf = (char*)ngx_palloc(_pool, size);
+    // use ngx_pnalloc instead of ngx_palloc, ignore align
+    *buf = (char*)ngx_pnalloc(_pool, size);
     if (!(*buf)) {
         return -1;
     }
@@ -108,12 +109,14 @@ void IOBuf::reclaim(int count)
 
 int IOBuf::read(const char** data)
 {
-    if (!_read_pool) {
+    if ((!_read_pool) || (_bytes == 0)) {
         LOG(NGX_LOG_LEVEL_INFO, "no more data in zero_copy_input_stream");
         return -1;
     }
 
-    int remain = (char*)_read_pool->d.last - _read_point;
+    // normally, _bytes > (last - read_point)
+    // but when cutted, we can only read _bytes
+    int remain = std::min((char*)_read_pool->d.last - _read_point, (long)_bytes);
     if (remain > 0) {
         *data = _read_point;
         _read_point += remain;
@@ -128,8 +131,8 @@ int IOBuf::read(const char** data)
     }
     *data = _start_points[++_read_block];
     // maybe 0, no matter, read again
-    _read_point = (char*)_read_pool->d.last;
-    remain = _read_point - *data;
+    remain = std::min((char*)_read_pool->d.last - *data, (long)_bytes);
+    _read_point = (char*)*data + remain;
     _bytes -= remain;
     return remain;
 }
@@ -149,28 +152,57 @@ void IOBuf::back(int count)
 int IOBuf::skip(int count)
 {
     int origin_count = count;
-    while (count) {
-        int current_block_remain_byte = (char*)_read_pool->d.last - _read_point;
+    while (count && _bytes) {
+        int current_block_remain_byte = std::min((char*)_read_pool->d.last - _read_point, (long)_bytes);
         if (current_block_remain_byte < count) {
             count -= current_block_remain_byte;
             _bytes -= current_block_remain_byte;
-            _read_pool = _read_pool->d.next;
-            if (!_read_pool) {
-                return (origin_count - count);
+            _read_point += current_block_remain_byte;
+            if (_read_point == (char*)_read_pool->d.last)
+            {
+                _read_pool = _read_pool->d.next;
+                if (!_read_pool) {
+                    break;
+                    return (origin_count - count);
+                }
+                _read_point = _start_points[_read_block++];
             }
-            _read_point = _start_points[_read_block++];
         }
-        count = 0;
-        _read_point += count;
-        _bytes -= count;
-        return origin_count;
+        else {
+            _read_point += count;
+            _bytes -= count;
+            count = 0;
+        }
     }
-    return origin_count;
+    if (count) {
+        LOG(NGX_LOG_LEVEL_WARN, "skip too much, not enough data");
+    }
+    return origin_count - count;
 }
 
 size_t IOBuf::get_byte_count()
 {
     return _bytes;
+}
+
+bool IOBuf::cutn(int count)
+{
+    if ((long)count > (long)_bytes) {
+        LOG(NGX_LOG_LEVEL_WARN, "not enough data to be cutted");
+        _cut_remain_bytes = 0;
+        //_bytes = _bytes;
+        return false;
+    }
+    _cut_remain_bytes = _bytes - count;
+    _bytes = count;
+    return true;
+}
+
+void IOBuf::carrayon()
+{
+    _bytes += _cut_remain_bytes;
+    _cut_remain_bytes = 0;
+    return;
 }
 
 void IOBuf::dump_payload(std::string* payload)
@@ -190,6 +222,14 @@ void IOBuf::dump_payload(std::string* payload)
         p = p->d.next;
     }
     return;
+}
+
+void IOBuf::print_payload()
+{
+    std::string payload;
+    payload.reserve(1024);
+    dump_payload(&payload);
+    std::cout << payload << std::endl;
 }
 
 void IOBuf::dump_info(std::string* info)
@@ -216,7 +256,17 @@ void IOBuf::dump_info(std::string* info)
         common::string_appendf(info, "start_point = %p\n\n", _start_points[i++]);
         p = p->d.next;
     }
-    common::string_appendf(info, "bytes = %zu\n", _bytes);
+    common::string_appendf(info, "_read_point = %p\n", _read_point);
+    common::string_appendf(info, "bytes = %zu\n\n", _bytes);
 }
+
+void IOBuf::print_info()
+{
+    std::string info;
+    info.reserve(1024);
+    dump_info(&info);
+    std::cout << info << std::endl;
+}
+
 
 }

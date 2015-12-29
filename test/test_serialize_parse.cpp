@@ -17,7 +17,9 @@
 int main()
 {
     nrpc::Student student;
-    nrpc::Student student_parse;
+    nrpc::Student student_parse1;
+    nrpc::Student student_parse2;
+
     student.set_id("AFDSKO04D31F");
     student.set_name("ZHAOMANG");
     student.set_gender("male");
@@ -33,14 +35,33 @@ int main()
         return -1;
     }
 
-    ngxplus::IOBufAsZeroCopyInputStream zero_in(&iobuf);
-    if (!student_parse.ParseFromZeroCopyStream(&zero_in)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "parse error");
+    if (!student.SerializeToZeroCopyStream(&zero_out)) {
+        LOG(NGX_LOG_LEVEL_ALERT, "serialize again error");
         return -1;
     }
 
-    std::string result;
-    google::protobuf::TextFormat::PrintToString(student_parse, &result);
-    std::cout << result << std::endl;
+    int len = iobuf.get_byte_count()/2;
+    // must cutn, protobuf ParseFromStream return TRUE 
+    // only when consumed entired payload
+    iobuf.cutn(len);
+    ngxplus::IOBufAsZeroCopyInputStream zero_in(&iobuf);
+    if (!student_parse1.ParseFromZeroCopyStream(&zero_in)) {
+        LOG(NGX_LOG_LEVEL_ALERT, "parse error");
+        return -1;
+    }
+    std::string result1;
+    google::protobuf::TextFormat::PrintToString(student_parse1, &result1);
+    std::cout << result1 << std::endl;
+    // carrayon() must along with cutn()
+    iobuf.carrayon();
+
+    if (!student_parse2.ParseFromZeroCopyStream(&zero_in)) {
+        LOG(NGX_LOG_LEVEL_ALERT, "parse again error");
+        return -1;
+    }
+    std::string result2;
+    google::protobuf::TextFormat::PrintToString(student_parse2, &result2);
+    std::cout << result2 << std::endl;
+
     return 0;
 }
