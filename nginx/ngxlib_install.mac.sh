@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NGX_ROOT=/Users/baidu/work/nginx/tengine/
+NGX_ROOT=~/work/nginx/tengine/
 tmp_dir=`dirname $0`
 ROOT=`cd ${tmp_dir} && pwd`
 

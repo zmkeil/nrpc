@@ -8,6 +8,7 @@
   
  **********************************************/
 
+#include <google/protobuf/text_format.h>
 #include "protocol.h"
 #include "echo.pb.h"
 
@@ -20,6 +21,7 @@ public:
 			nrpc::EchoResponse* response, 
 			google::protobuf::Closure* done) {
 		std::cout << "in Echo method" << std::endl;
+        std::cout << "request msg: " << request->msg() << std::endl;
 		return;
 	}
 };
@@ -46,6 +48,10 @@ int main()
 
     ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(&iobuf);
     mock_meta.ParseFromZeroCopyStream(&zero_in_stream);
+    std::string mock_meta_string;
+    google::protobuf::TextFormat::PrintToString(mock_meta, &mock_meta_string);
+    std::cout << mock_meta_string << std::endl;
+
     nrpc::default_protocol.process_request(mock_session, mock_meta, &iobuf);
 
     return 0;

@@ -1,0 +1,17 @@
+*.o
+*.a
+*.pb.cc
+*.pb.h
+*.log
+nginx/include/
+
+ngxplus/test/test_iobuf
+ngxplus/test/test_log
+ngxplus/test/test_open_file
+ngxplus/test/test_timer
+ngxplus/test/test_zero_copy_stream
+
+test/test_ngx_start
+test/test_protocol
+test/test_serialize_parse
+test/test_service

@@ -23,7 +23,7 @@ struct Protocol default_protocol {
     "nrpc_default"
 };
 
-// Parse binary format of baidu-rpc
+// Parse binary format of nrpc
 ParseResult default_parse_message(ngxplus::IOBuf* source, RpcSession* session, bool read_eof)
 {
     (void) source;
@@ -44,6 +44,7 @@ int default_pack_request(
     RpcRequestMeta* req_meta = meta.mutable_request();
     const google::protobuf::ServiceDescriptor* service = method->service();
     if (!service) {
+        LOG(NGX_LOG_LEVEL_ALERT, "Failed to find the service the method_descriptor belongs to");
         return -1;
     }
     req_meta->set_service_name(service->name());
@@ -51,13 +52,17 @@ int default_pack_request(
 
     ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
     if (!meta.SerializeToZeroCopyStream(&zero_out_stream)) {
+        LOG(NGX_LOG_LEVEL_ALERT, "Failed to serialize meta");
         return -1;
     }
-    return request.SerializeToZeroCopyStream(&zero_out_stream) ?
-            zero_out_stream.ByteCount() : -1;
+    if (!request.SerializeToZeroCopyStream(&zero_out_stream)) {
+        LOG(NGX_LOG_LEVEL_ALERT, "Failed to serialize request");
+        return -1;
+    }
+    return zero_out_stream.ByteCount();
 }
 
-// Actions to a (client) request in baidu-rpc format.
+// Actions to a (client) request in nrpc format.
 void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf* req_buf)
 {
     const RpcRequestMeta& req_meta = meta.request();
@@ -81,9 +86,9 @@ void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf*
             service->GetRequestPrototype(method_descriptor).New());
     std::unique_ptr<google::protobuf::Message> res(
             service->GetResponsePrototype(method_descriptor).New());
-    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(req_buf);
-    if (!req->SerializeToZeroCopyStream(&zero_out_stream)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "rpc request not fitted");
+    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(req_buf);
+    if (!req->ParseFromZeroCopyStream(&zero_in_stream)) {
+        LOG(NGX_LOG_LEVEL_ALERT, "Failed to parse rpc request");
         // session->set_error()
         return;
     }
@@ -103,7 +108,7 @@ void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf*
             req.release(), res.release(), NULL/*done*/);
 }
 
-// Actions to a (server) response in baidu-rpc format.
+// Actions to a (server) response in nrpc format.
 void default_process_response(RpcSession* session, RpcMeta& resp_meta, ngxplus::IOBuf* resp_buf)
 {
     (void) session;
