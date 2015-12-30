@@ -87,4 +87,9 @@ void ServiceSet::dump(std::string *message)
     }
 }
 
+Server* ServiceSet::server()
+{
+    return _server;
+}
+
 }

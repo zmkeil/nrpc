@@ -2,7 +2,7 @@
 /***********************************************
   File name		: server.h
   Create date	: 2015-12-02 22:04
-  Modified date : 2015-12-18 02:48
+  Modified date : 2015-12-31 02:30
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -26,6 +26,15 @@ extern "C" {
 
 namespace nrpc {
 
+struct ServerOption {
+    ServerOption() :
+            read_timeout(3/*s*/),
+            max_concurrency(8) {}
+
+    int read_timeout;
+    int max_concurrency;
+};
+
 class Server {
 public:
 	Server();
@@ -36,7 +45,7 @@ public:
                     /*host:port:bind:wildcard:so_keepalive*/);
 
     // Start server
-    int start();
+    int start(ServerOption* option);
 
 	// Stop server
 	int stop();
@@ -44,10 +53,12 @@ public:
 	// Join all processor after server.stop()
 	int join();
 
-public:
-    static ngx_log_t* _s_error_log;
+
+    // get options
+    int read_timeout();
 
 private:
+    ServerOption* _option;
     std::vector<ServiceSet*> _service_sets;
 };
 

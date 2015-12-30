@@ -15,6 +15,7 @@ extern "C" {
 #include <ngx_string.h>
 }
 #include "ngx_nrpc_module.h"
+#include "ngx_nrpc_handler.h"
 
 /*
  * for ngx_nrpc_module init
@@ -142,7 +143,7 @@ static char *ngx_nrpc_block(ngx_conf_t *cf, ngx_command_t* /*cmd*/, void* /*conf
         }
 
         ls->addr_ntop = 1;
-        ls->handler = ngx_nrpc_init_connection;
+        ls->handler = nrpc::ngx_nrpc_init_connection;
         ls->pool_size = 256;
 
         // TODO: error_log directive 

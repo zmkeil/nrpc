@@ -39,6 +39,8 @@ public:
 
     size_t get_byte_count();
 
+    char* get_read_point();
+
     // cutn and carrayon must appear in pairs and continously
     bool cutn(int count);
     void carrayon();

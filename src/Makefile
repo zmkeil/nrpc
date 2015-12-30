@@ -38,10 +38,12 @@ INCPATH=-I. \
 PROTO=nrpc_meta
 
 objs=ngx_nrpc_module.o \
+	 ngx_nrpc_handler.o \
 	 rpc_session.o \
 	 server.o \
 	 service_set.o \
 	 policy/proto/nrpc_meta.pb.o \
+	 policy/protocol.o \
 	 policy/serialize_rpc.o \
 	 policy/http_rpc.o
 

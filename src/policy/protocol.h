@@ -5,7 +5,6 @@
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
 #include "iobuf_zero_copy_stream.h"
-#include "rpc_session.h"
 #include "service_set.h"
 #include "server.h"
 #include "controller.h"
@@ -13,6 +12,8 @@
 
 namespace nrpc
 {
+
+class RpcSession;
 
 enum ParseResult {
     // bad package format
@@ -52,8 +53,24 @@ struct Protocol {
     const char* name;
 };
 
-extern struct Protocol default_protocol;
-extern struct Protocol http_protocol;
+extern Protocol* g_rpc_protocols[5];
+
+struct DefaultProtocolCtx {
+    RpcMeta* rpc_meta;
+    // for request
+    int32_t meta_size;
+    int32_t body_size;
+
+    // for response
+};
+void default_send_rpc_response(Controller* cntl, const google::protobuf::Message* req,
+                const google::protobuf::Message* resp, long start_process_us);
+
+struct HttpProtocolCtx {
+    int version;
+};
+void http_send_rpc_response(Controller* cntl, const google::protobuf::Message* req,
+                const google::protobuf::Message* resp, long start_process_us);
 
 }
 #endif

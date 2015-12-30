@@ -186,6 +186,11 @@ size_t IOBuf::get_byte_count()
     return _bytes;
 }
 
+char* IOBuf::get_read_point()
+{
+    return _read_point;
+}
+
 bool IOBuf::cutn(int count)
 {
     if ((long)count > (long)_bytes) {

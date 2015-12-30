@@ -2,7 +2,7 @@
 /***********************************************
   File name		: service_set.h
   Create date	: 2015-12-02 22:04
-  Modified date : 2015-12-15 23:54
+  Modified date : 2015-12-31 02:33
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -60,6 +60,9 @@ public:
 	const MethodProperty* find_method_property_by_full_name(const std::string& method_full_name);
 
     void dump(std::string *message);
+
+    // get
+    Server* server();
 
 private:
 	// <service->name(), ServiceProperty>

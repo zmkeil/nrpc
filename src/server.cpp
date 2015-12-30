@@ -2,7 +2,7 @@
 /***********************************************
   File name		: server.cpp
   Create date	: 2015-12-02 22:46
-  Modified date : 2015-12-24 00:12
+  Modified date : 2015-12-31 02:30
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -45,8 +45,10 @@ ServiceSet* Server::push_service_set(const std::string& str_address)
     return service_set;
 }
 
-int Server::start()
+int Server::start(ServerOption* option)
 {
+    _option = option;
+
     if (ngx_pre_init() != 0) {
         std::cout << "ngx_pre_init failed" << std::endl;
         return -1;
@@ -62,6 +64,13 @@ int Server::start()
 
     ngx_start();
 	return 0;
+}
+
+
+// get options
+int Server::read_timeout()
+{
+    return _option->read_timeout;
 }
 
 }

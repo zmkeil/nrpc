@@ -13,6 +13,8 @@
 namespace nrpc
 {
 
+class RpcSession;
+
 class Controller : public google::protobuf::RpcController
 {
 public:
@@ -112,12 +114,17 @@ public:
 
     void StartCancel() {return;}
 
+    
+    void set_session(RpcSession* session) {_session = session;}
+    RpcSession* session() {return _session;}
 private:
     bool _is_close_connection;
     Server* _server;
     int _remote_side;
     int _local_side;
     int _error_code;
+
+    RpcSession* _session;
 };
 
 }

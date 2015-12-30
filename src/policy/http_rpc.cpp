@@ -12,4 +12,14 @@ struct Protocol http_protocol {
     "http"
 };
 
+void http_send_rpc_response(Controller* cntl, const google::protobuf::Message* req,
+                const google::protobuf::Message* resp, long start_process_us)
+{
+    (void) cntl;
+    (void) req;
+    (void) resp;
+    (void) start_process_us;
+    return;
+}
+
 }
