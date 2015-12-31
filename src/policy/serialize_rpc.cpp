@@ -15,10 +15,9 @@ static ParseResult default_parse_message(ngxplus::IOBuf* source, RpcSession* ses
 static int default_pack_request(
         ngxplus::IOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
-        Controller* cntl,
-        const google::protobuf::Message& request);
-static void default_process_request(RpcSession* session, RpcMeta& req_meta, ngxplus::IOBuf* req_buf);
-static void default_process_response(RpcSession* session, RpcMeta& resp_meta, ngxplus::IOBuf* resp_buf);
+        Controller* cntl, const google::protobuf::Message& request);
+static void default_process_request(RpcSession* session, ngxplus::IOBuf* req_buf);
+static void default_process_response(RpcSession* session, ngxplus::IOBuf* resp_buf);
 
 class DefaultProtocolCtxFactory : public ProtocolCtxFactory
 {
@@ -89,10 +88,15 @@ ParseResult default_parse_message(ngxplus::IOBuf* source, RpcSession* session, b
 int default_pack_request(
         ngxplus::IOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
-        Controller* cntl,
-        const google::protobuf::Message& request)
+        Controller* cntl, const google::protobuf::Message& request)
 {
     (void) cntl;
+    // msg->clear();
+    char* buf;
+    msg->alloc(&buf, 12, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
+    *(int32_t*)buf = *(int32_t*)"NRPC";
+    buf += 4;
+
     RpcMeta meta;
     RpcRequestMeta* req_meta = meta.mutable_request();
     const google::protobuf::ServiceDescriptor* service = method->service();
@@ -102,25 +106,31 @@ int default_pack_request(
     }
     req_meta->set_service_name(service->name());
     req_meta->set_method_name(method->name());
-
     ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
     if (!meta.SerializeToZeroCopyStream(&zero_out_stream)) {
         LOG(NGX_LOG_LEVEL_ALERT, "Failed to serialize meta");
         return -1;
     }
+    int meta_size = zero_out_stream.ByteCount() - 12;
+    *(int32_t*)buf = meta_size;
+    buf += 4;
+
     if (!request.SerializeToZeroCopyStream(&zero_out_stream)) {
         LOG(NGX_LOG_LEVEL_ALERT, "Failed to serialize request");
         return -1;
     }
+    int body_size = zero_out_stream.ByteCount() - 12 - meta_size;
+    *(int32_t*)buf = body_size;
+
     return zero_out_stream.ByteCount();
 }
 
 // Actions to a (client) request in nrpc format.
-void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf* req_buf)
+void default_process_request(RpcSession* session, ngxplus::IOBuf* req_buf)
 {
     //TODO: timer
     long start_process_us = 1/*ngxplus::Timer::get_time_us()*/;
-    const RpcRequestMeta& req_meta = meta.request();
+    const RpcRequestMeta& req_meta = (static_cast<DefaultProtocolCtx*>(session->protocol_ctx()))->rpc_meta->request();
 
     ServiceSet* service_set = static_cast<ServiceSet*>(session->service_set());
     std::string full_name = req_meta.service_name() + "_" + req_meta.method_name();
@@ -161,10 +171,10 @@ void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf*
 }
 
 // Actions to a (server) response in nrpc format.
-void default_process_response(RpcSession* session, RpcMeta& resp_meta, ngxplus::IOBuf* resp_buf)
+// for client end
+void default_process_response(RpcSession* session, ngxplus::IOBuf* resp_buf)
 {
     (void) session;
-    (void) resp_meta;
     (void) resp_buf;
 
     return;

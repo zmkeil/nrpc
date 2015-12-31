@@ -49,7 +49,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
         rpc_session->finalize();
     }
 
-    // n == 1
+    // n == 1, determin the protocol
     c->received += 1;
     int protocol_num;
     switch(first_character) {
@@ -69,6 +69,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
         return rpc_session->finalize();
     }
 
+    // get iobuf, and read the following data
     ngxplus::IOBuf* iobuf = new ngxplus::IOBuf(); // default blocksize 1024
     char* buf;
     int len = iobuf->alloc(&buf, 1, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
@@ -130,13 +131,13 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         if (len == 0) {
             read_eof = true;
         }
-        ParseResult presult = session->protocol()->parse(iobuf, session, read_eof);
+        Protocol* protocol = session->protocol();
+        ParseResult presult = protocol->parse(iobuf, session, read_eof);
         if (presult == PARSE_DONE) {
             rev->handler = ngx_nrpc_dummy_read;
             ngx_del_timer(rev);
             session->set_state(RPC_SESSION_PROCESSING);
-            return session->protocol()->process_request(session,
-                    *((DefaultProtocolCtx*)session->protocol_ctx())->rpc_meta, iobuf);
+            return protocol->process_request(session, iobuf);
         }
         else if (presult == PARSE_INCOMPLETE) {
             ngx_add_timer(rev, session->read_timeout());

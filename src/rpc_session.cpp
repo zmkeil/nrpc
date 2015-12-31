@@ -87,12 +87,6 @@ bool RpcSession::set_iobuf(ngxplus::IOBuf* iobuf)
     return true;
 }
 
-bool RpcSession::set_service_set(ServiceSet* service_set)
-{
-    _service_set = service_set;
-    return true;
-}
-
 // get
 ngxplus::IOBuf* RpcSession::iobuf()
 {
@@ -138,6 +132,14 @@ std::string RpcSession::process_error_text()
 int RpcSession::read_timeout()
 {
     return _server->read_timeout();
+}
+
+
+// private
+bool RpcSession::set_service_set(ServiceSet* service_set)
+{
+    _service_set = service_set;
+    return true;
 }
 
 }

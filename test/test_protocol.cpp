@@ -27,7 +27,7 @@ public:
 	}
 };
 
-extern nrpc::Protocol nrpc::default_protocol;
+#define PROTOCOL_NUM 0
 
 int main()
 {
@@ -39,25 +39,21 @@ int main()
     nrpc::EchoRequest req;
     req.set_msg("hello");
     ngxplus::IOBuf iobuf;
-    nrpc::default_protocol.pack_request(&iobuf, pmdes, NULL, req);
+    nrpc::g_rpc_protocols[PROTOCOL_NUM]->pack_request(&iobuf, pmdes, NULL, req);
 
 
     // process request from iobuf
-    nrpc::RpcSession* mock_session = new nrpc::RpcSession(NULL);
+    nrpc::RpcSession* mock_session = new nrpc::RpcSession(NULL/*ngx_connection_t**/);
     nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
     mock_service_set->add_service(&service);
     mock_session->set_service_set(mock_service_set);
-    nrpc::RpcMeta mock_meta;
 
-    iobuf.cutn(21/*size of meta_bytes*/);
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(&iobuf);
-    mock_meta.ParseFromZeroCopyStream(&zero_in_stream);
-    std::string mock_meta_string;
-    google::protobuf::TextFormat::PrintToString(mock_meta, &mock_meta_string);
-    std::cout << mock_meta_string << std::endl;
-    iobuf.carrayon();
+    // mock determine protocol
+    mock_session->set_protocol(PROTOCOL_NUM);
+    nrpc::Protocol* protocol = mock_session->protocol();
 
-    nrpc::default_protocol.process_request(mock_session, mock_meta, &iobuf);
+    mock_session->protocol()->parse(&iobuf, mock_session, true);
+    mock_session->protocol()->process_request(mock_session, &iobuf);
 
     return 0;
 }

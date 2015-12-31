@@ -34,12 +34,11 @@ typedef ParseResult (*Parse)(ngxplus::IOBuf* source, RpcSession* session, bool r
 typedef int (*PackRequest)(
         ngxplus::IOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
-        Controller* controller,
-        const google::protobuf::Message& request);
+        Controller* controller, const google::protobuf::Message& request);
 
-typedef void (*ProcessRequest)(RpcSession* session, RpcMeta& req_meta, ngxplus::IOBuf* req_buf);
+typedef void (*ProcessRequest)(RpcSession* session, ngxplus::IOBuf* req_buf);
 
-typedef void (*ProcessResponse)(RpcSession* session, RpcMeta& resp_meta, ngxplus::IOBuf* resp_buf);
+typedef void (*ProcessResponse)(RpcSession* session, ngxplus::IOBuf* resp_buf);
 
 class ProtocolCtx {
 };
@@ -83,8 +82,10 @@ extern Protocol http_protocol;
 extern Protocol* g_rpc_protocols[NRPC_MAX_PROTOCOL_NUM];
 
 struct DefaultProtocolCtx : public ProtocolCtx {
+    DefaultProtocolCtx() : rpc_meta(nullptr), meta_size(-1), body_size(-1) {}
     RpcMeta* rpc_meta;
     // for request
+    // total_size = 12 + meta_size + body_size
     int32_t meta_size;
     int32_t body_size;
 
