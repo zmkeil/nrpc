@@ -155,7 +155,7 @@ static char *ngx_nrpc_block(ngx_conf_t *cf, ngx_command_t* /*cmd*/, void* /*conf
         ls->keepalive = nrpc_listens[i].service_address.so_keepalive;
 
         // TODO: ls->servers
-        ls->servers = &nrpc_listens[i].service_set;
+        ls->servers = nrpc_listens[i].service_set;
     }
 
     return (char*)NGX_CONF_OK;

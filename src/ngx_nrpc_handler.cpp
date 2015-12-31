@@ -104,12 +104,12 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
     }
 
     ngxplus::IOBuf *iobuf = session->iobuf();
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(iobuf);
+    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(iobuf);
 
     char* buf;
     int size;
     for(;;) {
-        if (!zero_in_stream.Next((const void**)&buf, &size)) {
+        if (!zero_out_stream.Next((void**)&buf, &size)) {
             session->set_result(RPC_INNER_ERROR);
             session->set_result_text("read request alloc error");
             session->finalize();
@@ -135,7 +135,9 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         ParseResult presult = protocol->parse(iobuf, session, read_eof);
         if (presult == PARSE_DONE) {
             rev->handler = ngx_nrpc_dummy_read;
-            ngx_del_timer(rev);
+            if (rev->timer_set) {
+                ngx_del_timer(rev);
+            }
             session->set_state(RPC_SESSION_PROCESSING);
             return protocol->process_request(session, iobuf);
         }

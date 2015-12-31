@@ -58,12 +58,14 @@ objs=test_service.o \
 	 echo.pb.o \
 	 test_ngx_start.o \
 	 test_serialize_parse.o \
-	 test_protocol.o
+	 test_protocol.o \
+	 client.o
 
 testbin=test_service \
 		test_ngx_start \
 		test_serialize_parse \
-		test_protocol
+		test_protocol \
+		client
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -105,7 +107,7 @@ test_service:test_service.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_service $(LDFLAGS)
 
-test_ngx_start:test_ngx_start.o
+test_ngx_start:test_ngx_start.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_ngx_start $(LDFLAGS)
 
@@ -116,6 +118,10 @@ test_serialize_parse:test_serialize_parse.o echo.pb.o
 test_protocol:test_protocol.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_protocol $(LDFLAGS)
+
+client:client.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc

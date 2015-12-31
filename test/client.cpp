@@ -1,14 +1,21 @@
 
 /***********************************************
-  File name		: test_protocol.cpp
-  Create date	: 2015-12-28 23:57
-  Modified date : 2016-01-01 00:42
+  File name		: client.cpp
+  Create date	: 2015-12-31 23:56
+  Modified date : 2016-01-01 00:41
   Author		: zmkeil, alibaba.inc
   Express : 
   
  **********************************************/
-
-#include <google/protobuf/text_format.h>
+extern "C" {
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <strings.h>
+#include <string.h>
+}
+#include <iostream>
 #include "rpc_session.h"
 #include "protocol.h"
 #include "echo.pb.h"
@@ -28,11 +35,27 @@ public:
 };
 
 #define PROTOCOL_NUM 0
+#define SERV_PORT 8899
 
-int main()
+int main(int argc, char** argv)
 {
-    EchoServiceImpl service;
+    int sockfd;
+    struct sockaddr_in servaddr;
 
+    if (argc != 2) {
+        std::cout << "usage: tcpcli <IPaddress>" << std::endl;
+        return -1;
+    }
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(SERV_PORT);
+    inet_pton(AF_INET, argv[1], &servaddr.sin_addr);
+
+    connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr));
+
+    EchoServiceImpl service;
     // pack request to iobuf
     const google::protobuf::ServiceDescriptor* psdes = service.GetDescriptor();
 	const google::protobuf::MethodDescriptor *pmdes = psdes->method(0);
@@ -41,19 +64,8 @@ int main()
     ngxplus::IOBuf iobuf;
     nrpc::g_rpc_protocols[PROTOCOL_NUM]->pack_request(&iobuf, pmdes, NULL, req);
 
-
-    // process request from iobuf
-    nrpc::RpcSession* mock_session = new nrpc::RpcSession(NULL/*ngx_connection_t**/);
-    nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
-    mock_service_set->add_service(&service);
-    mock_session->set_service_set(mock_service_set);
-
-    // mock determine protocol
-    mock_session->set_protocol(PROTOCOL_NUM);
-    nrpc::Protocol* protocol = mock_session->protocol();
-
-    protocol->parse(&iobuf, mock_session, true);
-    protocol->process_request(mock_session, &iobuf);
+    send(sockfd, iobuf.get_read_point(), iobuf.get_byte_count(), 0);
+    sleep(1);
 
     return 0;
 }
