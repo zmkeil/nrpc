@@ -91,7 +91,7 @@ int default_pack_request(
         Controller* cntl, const google::protobuf::Message& request)
 {
     (void) cntl;
-    // msg->clear();
+    msg->release_all();
     char* buf;
     msg->alloc(&buf, 12, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
     *(int32_t*)buf = *(int32_t*)"NRPC";
@@ -130,7 +130,8 @@ void default_process_request(RpcSession* session, ngxplus::IOBuf* req_buf)
 {
     //TODO: timer
     long start_process_us = 1/*ngxplus::Timer::get_time_us()*/;
-    const RpcRequestMeta& req_meta = (static_cast<DefaultProtocolCtx*>(session->protocol_ctx()))->rpc_meta->request();
+    const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(session->protocol_ctx()));
+    const RpcRequestMeta& req_meta = pctx->rpc_meta->request();
 
     ServiceSet* service_set = static_cast<ServiceSet*>(session->service_set());
     std::string full_name = req_meta.service_name() + "_" + req_meta.method_name();
@@ -150,12 +151,19 @@ void default_process_request(RpcSession* session, ngxplus::IOBuf* req_buf)
             service->GetRequestPrototype(method_descriptor).New());
     std::unique_ptr<google::protobuf::Message> resp(
             service->GetResponsePrototype(method_descriptor).New());
+
+    // cutn() before ParseFromZeroCopyStream
+    int body_size = pctx->body_size;
+    req_buf->cutn(body_size);
     ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(req_buf);
     if (!req->ParseFromZeroCopyStream(&zero_in_stream)) {
         session->set_result(RPC_PROCESS_ERROR);
         session->set_result_text("Failed to parse rpc request");
         return session->finalize();
     }
+    // release the remian payload
+    req_buf->carrayon();
+    req_buf->release_all();
 
     std::unique_ptr<Controller> cntl(new (std::nothrow) Controller);
     // client.options --> req_meta -->server.cntl
@@ -193,8 +201,7 @@ void default_send_rpc_response(Controller* cntl, long start_process_us)
     response_meta->set_error_text(rpc_session->process_error_text());
 
     ngxplus::IOBuf* iobuf = rpc_session->iobuf();
-    // TODO:iobuf.clear()
-    //iobuf->clear();
+    iobuf->release_all();
     ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(iobuf);
     if (!rpc_meta->SerializeToZeroCopyStream(&zero_out_stream)) {
         rpc_session->set_result(RPC_INNER_ERROR);
@@ -203,7 +210,7 @@ void default_send_rpc_response(Controller* cntl, long start_process_us)
     }
     if (!resp->SerializeToZeroCopyStream(&zero_out_stream)) {
         rpc_session->set_result(RPC_INNER_ERROR);
-        rpc_session->set_result_text("serialize rpc_meta error");
+        rpc_session->set_result_text("serialize response error");
         return rpc_session->finalize();
     }
 

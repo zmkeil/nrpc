@@ -35,6 +35,8 @@ public:
 
     int skip(int count);
 
+    void release_all();
+
     void back(int count);
 
     size_t get_byte_count();

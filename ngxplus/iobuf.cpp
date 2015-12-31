@@ -181,6 +181,11 @@ int IOBuf::skip(int count)
     return origin_count - count;
 }
 
+void IOBuf::release_all()
+{
+    skip(_bytes);
+}
+
 size_t IOBuf::get_byte_count()
 {
     return _bytes;
