@@ -192,30 +192,41 @@ void default_send_rpc_response(Controller* cntl, long start_process_us)
 {
     (void) start_process_us;
     RpcSession* rpc_session = cntl->session();
-    const google::protobuf::Message* resp = cntl->response(); 
- 
-    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)rpc_session->protocol_ctx())->rpc_meta;
+    const google::protobuf::Message* resp = cntl->response();
 
+    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)rpc_session->protocol_ctx())->rpc_meta;
     RpcResponseMeta* response_meta = rpc_meta->mutable_response();
     response_meta->set_error_code(rpc_session->process_error_code());
     response_meta->set_error_text(rpc_session->process_error_text());
 
     ngxplus::IOBuf* iobuf = rpc_session->iobuf();
     iobuf->release_all();
+    char* buf;
+    iobuf->alloc(&buf, 12, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
+    *(int32_t*)buf = *(int32_t*)"NRPC";
+    buf += 4;
+
     ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(iobuf);
     if (!rpc_meta->SerializeToZeroCopyStream(&zero_out_stream)) {
         rpc_session->set_result(RPC_INNER_ERROR);
         rpc_session->set_result_text("serialize rpc_meta error");
         return rpc_session->finalize();
     }
+    int meta_size = zero_out_stream.ByteCount() - 12;
+    *(int32_t*)buf = meta_size;
+    buf += 4;
+
     if (!resp->SerializeToZeroCopyStream(&zero_out_stream)) {
         rpc_session->set_result(RPC_INNER_ERROR);
         rpc_session->set_result_text("serialize response error");
         return rpc_session->finalize();
     }
+    int body_size = zero_out_stream.ByteCount() - 12 - meta_size;
+    *(int32_t*)buf = body_size;
 
     rpc_session->set_state(RPC_SESSION_SENDING_RESPONSE);
     ngx_connection_t* c = rpc_session->connection();
+    c->write->handler = ngx_nrpc_send_response;
     return ngx_nrpc_send_response(c->write);
 }
 

@@ -168,8 +168,32 @@ void ngx_nrpc_dummy_read(ngx_event_t* rev)
 
 void ngx_nrpc_send_response(ngx_event_t* wev)
 {
-    RpcSession* rpc_session = (RpcSession*)((ngx_connection_t*)wev->data)->data;
+    ngx_connection_t* c = (ngx_connection_t*)wev->data;
+    RpcSession* rpc_session = (RpcSession*)c->data;
+    ngxplus::IOBuf* iobuf = rpc_session->iobuf();
 
+    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(iobuf);
+    char* buf;
+    int size;
+    while (zero_in_stream.Next((const void**)&buf, &size)) {
+        if (size == 0) {
+            continue;
+        }
+        int n = c->send(c, (u_char*)buf, size);
+        if (n < size) {
+            if (!wev->timer_set) {
+                ngx_add_timer(wev, 1/*rpc_session->write_timeout()*/);
+            }
+            if (ngx_handle_write_event(wev, 0) != NGX_OK) {
+                rpc_session->set_result(RPC_INNER_ERROR);
+                rpc_session->set_result_text("hanlde write event error");
+                return rpc_session->finalize();
+            }
+            // for the next event_loop
+            return;
+        }
+        // n == size, read next
+    }
     // send all to tcp buf
     rpc_session->set_state(RPC_SESSION_LOGING);
     // return rpc_session->get_log_handler()(rpc_session);

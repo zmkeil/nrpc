@@ -2,7 +2,7 @@
 /***********************************************
   File name		: client.cpp
   Create date	: 2015-12-31 23:56
-  Modified date : 2016-01-01 00:41
+  Modified date : 2016-01-01 02:52
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -62,10 +62,33 @@ int main(int argc, char** argv)
     nrpc::EchoRequest req;
     req.set_msg("hello");
     ngxplus::IOBuf iobuf;
-    nrpc::g_rpc_protocols[PROTOCOL_NUM]->pack_request(&iobuf, pmdes, NULL, req);
+    nrpc::Protocol* protocol = nrpc::g_rpc_protocols[PROTOCOL_NUM];
+    protocol->pack_request(&iobuf, pmdes, NULL, req);
 
     send(sockfd, iobuf.get_read_point(), iobuf.get_byte_count(), 0);
-    sleep(1);
+    //sleep(1);
 
+    iobuf.release_all();
+    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(&iobuf);
+    char *buf;
+    int size;
+    while (zero_out_stream.Next((void**)&buf, &size)) {
+        if (size == 0) {
+            continue;
+        }
+        int n = recv(sockfd, buf, size, 0);
+        std::cout << n << std::endl;
+        if (n < 0) {
+            std::cout << "read error" << std::endl;
+            return -1;
+        }
+        if ((n == 0) || (n < size)) {
+            // parse, then determine process_response or next loop
+            // here just process_response
+            break;
+        }
+    }
+
+    iobuf.print_payload();
     return 0;
 }
