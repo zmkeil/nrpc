@@ -7,7 +7,10 @@ CXXFLAGS=-g \
   -pipe \
   -W \
   -Wall \
-  -fPIC
+  -fPIC \
+  -std=c++11 \
+  -Dprivate=public \
+  -Dprotected=public
 CFLAGS=-g \
   -pipe \
   -W \

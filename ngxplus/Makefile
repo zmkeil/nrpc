@@ -40,7 +40,7 @@ objs=open_file.o \
      iobuf_zero_copy_stream.o
 
 .PHONY:all
-all:libngxplus.a
+all:libngxplus.a UT
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mall[0m']"
 	@echo "make all done"
 

@@ -7,13 +7,13 @@
 #include "iobuf_zero_copy_stream.h"
 #include "service_set.h"
 #include "server.h"
-#include "controller.h"
 #include "proto/nrpc_meta.pb.h"
 
 namespace nrpc
 {
 
 class RpcSession;
+class Controller;
 
 enum ParseResult {
     // bad package format
@@ -41,6 +41,17 @@ typedef void (*ProcessRequest)(RpcSession* session, RpcMeta& req_meta, ngxplus::
 
 typedef void (*ProcessResponse)(RpcSession* session, RpcMeta& resp_meta, ngxplus::IOBuf* resp_buf);
 
+class ProtocolCtx {
+};
+
+class ProtocolCtxFactory {
+public:
+    virtual ProtocolCtx* create_ctx() = 0;
+    virtual void destory_ctx(ProtocolCtx* ctx) {
+        delete ctx;
+    }
+};
+
 struct Protocol {
     Parse parse;
 
@@ -50,12 +61,28 @@ struct Protocol {
 
     ProcessResponse process_response;
 
+    ProtocolCtxFactory* ctx_factory;
+
     const char* name;
 };
 
-extern Protocol* g_rpc_protocols[5];
 
-struct DefaultProtocolCtx {
+
+/*
+ * for all specially protocols
+ * declare g_rpc_protocols, and define all protocol's ctx
+ * and declare all protocol's send_response_result
+ */
+
+#define NRPC_MAX_PROTOCOL_NUM 10
+#define NRPC_PROTOCOL_DEFAULT_NUM 0
+#define NRPC_PROTOCOL_HTTP_NUM 1
+
+extern Protocol default_protocol;
+extern Protocol http_protocol;
+extern Protocol* g_rpc_protocols[NRPC_MAX_PROTOCOL_NUM];
+
+struct DefaultProtocolCtx : public ProtocolCtx {
     RpcMeta* rpc_meta;
     // for request
     int32_t meta_size;
@@ -63,14 +90,12 @@ struct DefaultProtocolCtx {
 
     // for response
 };
-void default_send_rpc_response(Controller* cntl, const google::protobuf::Message* req,
-                const google::protobuf::Message* resp, long start_process_us);
+void default_send_rpc_response(Controller* cntl, long start_process_us);
 
-struct HttpProtocolCtx {
+struct HttpProtocolCtx : public ProtocolCtx {
     int version;
 };
-void http_send_rpc_response(Controller* cntl, const google::protobuf::Message* req,
-                const google::protobuf::Message* resp, long start_process_us);
+void http_send_rpc_response(Controller* cntl, long start_process_us);
 
 }
 #endif

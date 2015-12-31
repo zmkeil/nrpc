@@ -54,15 +54,15 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     int protocol_num;
     switch(first_character) {
     case 'N':
-        protocol_num = 0/*default*/;
+        protocol_num = NRPC_PROTOCOL_DEFAULT_NUM/*default*/;
         break;
     case 'G':
     case 'P':
     case 'H':
-        protocol_num = 1/*http*/;
+        protocol_num = NRPC_PROTOCOL_HTTP_NUM/*http*/;
         break;
     default:
-        protocol_num = 100;
+        protocol_num = 100/*invaild*/;
         break;
     }
     if (!rpc_session->set_protocol(protocol_num/*default_protocol*/)) {

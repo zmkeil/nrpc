@@ -9,6 +9,7 @@
  **********************************************/
 
 #include <google/protobuf/text_format.h>
+#include "rpc_session.h"
 #include "protocol.h"
 #include "echo.pb.h"
 
@@ -26,6 +27,8 @@ public:
 	}
 };
 
+extern nrpc::Protocol nrpc::default_protocol;
+
 int main()
 {
     EchoServiceImpl service;
@@ -40,10 +43,10 @@ int main()
 
 
     // process request from iobuf
-    nrpc::RpcSession* mock_session = new nrpc::RpcSession();
+    nrpc::RpcSession* mock_session = new nrpc::RpcSession(NULL);
     nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
     mock_service_set->add_service(&service);
-    mock_session->service_set = mock_service_set;
+    mock_session->set_service_set(mock_service_set);
     nrpc::RpcMeta mock_meta;
 
     iobuf.cutn(21/*size of meta_bytes*/);

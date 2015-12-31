@@ -1,7 +1,10 @@
 #include <memory>
+#include <google/protobuf/descriptor.h>
+#include <google/protobuf/message.h>
 #include "info_log_context.h"
 #include "protocol.h"
 #include "rpc_session.h"
+#include "controller.h"
 #include "ngx_nrpc_handler.h"
 
 namespace nrpc
@@ -17,18 +20,28 @@ static int default_pack_request(
 static void default_process_request(RpcSession* session, RpcMeta& req_meta, ngxplus::IOBuf* req_buf);
 static void default_process_response(RpcSession* session, RpcMeta& resp_meta, ngxplus::IOBuf* resp_buf);
 
+class DefaultProtocolCtxFactory : public ProtocolCtxFactory
+{
+public:
+    ProtocolCtx* create_ctx() {
+        return new DefaultProtocolCtx();
+    }
+};
+static DefaultProtocolCtxFactory default_protocol_ctx_factory;
+
 struct Protocol default_protocol {
     default_parse_message,
     default_pack_request,
     default_process_request,
     default_process_response,
+    &default_protocol_ctx_factory,
     "nrpc_default"
 };
 
 // Parse binary format of nrpc
 ParseResult default_parse_message(ngxplus::IOBuf* source, RpcSession* session, bool read_eof)
 {
-    DefaultProtocolCtx* pctx = (DefaultProtocolCtx*)session->protocol_ctx();
+    DefaultProtocolCtx* pctx = static_cast<DefaultProtocolCtx*>(session->protocol_ctx());
     int32_t meta_size = pctx->meta_size;
     int32_t body_size = pctx->body_size;
     if (meta_size == -1) {
@@ -106,7 +119,7 @@ int default_pack_request(
 void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf* req_buf)
 {
     //TODO: timer
-    //long start_process_us = 1/*ngxplus::Timer::get_time_us()*/;
+    long start_process_us = 1/*ngxplus::Timer::get_time_us()*/;
     const RpcRequestMeta& req_meta = meta.request();
 
     ServiceSet* service_set = static_cast<ServiceSet*>(session->service_set());
@@ -125,7 +138,7 @@ void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf*
 
     std::unique_ptr<google::protobuf::Message> req(
             service->GetRequestPrototype(method_descriptor).New());
-    std::unique_ptr<google::protobuf::Message> res(
+    std::unique_ptr<google::protobuf::Message> resp(
             service->GetResponsePrototype(method_descriptor).New());
     ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(req_buf);
     if (!req->ParseFromZeroCopyStream(&zero_in_stream)) {
@@ -137,15 +150,14 @@ void default_process_request(RpcSession* session, RpcMeta& meta, ngxplus::IOBuf*
     std::unique_ptr<Controller> cntl(new (std::nothrow) Controller);
     // client.options --> req_meta -->server.cntl
     cntl->set_session(session);
+    cntl->set_request(req.get());
+    cntl->set_response(resp.get());
 
-/*     google::protobuf::Closure* done = google::protobuf::NewCallback<
- *         Controller*, const google::protobuf::Message*,
- *         const google::protobuf::Message*, long>(
- *             &default_send_rpc_response, cntl.get(),
- *             req.get(), res.get(), start_process_us);
- */ 
+    google::protobuf::Closure* done = google::protobuf::NewCallback<Controller*, long>(
+            &default_send_rpc_response, cntl.get(),start_process_us);
+ 
     return service->CallMethod(method_descriptor, cntl.release(),
-            req.release(), res.release(), NULL);
+            req.release(), resp.release(), done);
 }
 
 // Actions to a (server) response in nrpc format.
@@ -158,12 +170,12 @@ void default_process_response(RpcSession* session, RpcMeta& resp_meta, ngxplus::
     return;
 }
 
-void default_send_rpc_response(Controller* cntl, const google::protobuf::Message* req,
-        const google::protobuf::Message* resp, long start_process_us)
+void default_send_rpc_response(Controller* cntl, long start_process_us)
 {
-    (void) req;
     (void) start_process_us;
     RpcSession* rpc_session = cntl->session();
+    const google::protobuf::Message* resp = cntl->response(); 
+ 
     RpcMeta* rpc_meta = ((DefaultProtocolCtx*)rpc_session->protocol_ctx())->rpc_meta;
 
     RpcResponseMeta* response_meta = rpc_meta->mutable_response();

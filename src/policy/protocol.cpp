@@ -15,7 +15,7 @@ namespace nrpc {
 extern Protocol default_protocol;
 extern Protocol http_protocol;
 
-Protocol* g_rpc_protocols[5] {
+Protocol* g_rpc_protocols[NRPC_MAX_PROTOCOL_NUM] {
     &default_protocol,
     &http_protocol
 };

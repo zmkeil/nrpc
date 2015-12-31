@@ -9,11 +9,11 @@
  **********************************************/
 
 #include <google/protobuf/service.h>
+#include "rpc_session.h"
+#include "protocol.h"
 
 namespace nrpc
 {
-
-class RpcSession;
 
 class Controller : public google::protobuf::RpcController
 {
@@ -46,17 +46,23 @@ public:
     // when NotifyOnCancel() is called, the callback will be called immediately.
     //
     // NotifyOnCancel() must be called no more than once per request.
-    void NotifyOnCancel(google::protobuf::Closure* callback) {}
+    void NotifyOnCancel(google::protobuf::Closure* callback) {
+        (void) callback;
+    }
 
     // Return the protocol of this request
     // ProtocolType request_protocol() const { return _request_protocol; }
-    std::string request_protocol() const {}
+    Protocol* request_protocol() const {
+        return _session->protocol();
+    }
 
     // Tell RPC to close the connection instead of sending back response.
     // If this controller was not SetFailed() before, ErrorCode() will be
     // set to ECLOSE.
     // Notice that the actual closing does not take place immediately.
-    void CloseConnection(const char* reason_fmt, ...) {}
+    void CloseConnection(const char* reason_fmt, ...) {
+        (void) reason_fmt;
+    }
 
     // True if CloseConnection() was called.
     bool IsCloseConnection() const { return _is_close_connection; }
@@ -96,8 +102,13 @@ public:
 
     // Causes Failed() to return true on the client side.  "reason" will be
     // incorporated into the message returned by ErrorText().
-    void SetFailed(const std::string& reason) {}
-    void SetFailed(int error_code, const char* reason_fmt, ...) {}
+    void SetFailed(const std::string& reason) {
+        (void) reason;
+    }
+    void SetFailed(int error_code, const char* reason_fmt, ...) {
+        (void) error_code;
+        (void) reason_fmt;
+    }
 
     // After a call has finished, returns true if the RPC call failed.
     // The response to Channel is undefined when Failed() is true.
@@ -117,6 +128,12 @@ public:
     
     void set_session(RpcSession* session) {_session = session;}
     RpcSession* session() {return _session;}
+
+    void set_request(google::protobuf::Message* request) {_request = request;}
+    google::protobuf::Message* request() {return _request;}
+    void set_response(google::protobuf::Message* response) {_response = response;}
+    google::protobuf::Message* response() {return _response;}
+
 private:
     bool _is_close_connection;
     Server* _server;
@@ -125,6 +142,8 @@ private:
     int _error_code;
 
     RpcSession* _session;
+    google::protobuf::Message* _request;
+    google::protobuf::Message* _response;
 };
 
 }

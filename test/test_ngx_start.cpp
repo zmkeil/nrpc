@@ -15,6 +15,8 @@ int main()
 
     // service_set.add_service(NULL);
 
-    server.start();
+    nrpc::ServerOption option;
+    server.start(&option);
+
     return 0;
 }

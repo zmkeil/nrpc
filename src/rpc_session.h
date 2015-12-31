@@ -81,6 +81,9 @@ public:
     int read_timeout();
 
 private:
+    bool set_service_set(ServiceSet* service_set);
+
+private:
     RPC_SESSION_STATE _state;
     RPC_RESULT _result;
     // for inner error to describe

@@ -63,8 +63,8 @@ bool RpcSession::set_result_text(const char* result_text)
 
 bool RpcSession::set_protocol(unsigned protocol_num)
 {
-    if ((protocol_num >= sizeof(g_rpc_protocols)) ||
-            (protocol_num != 0/*default_protocol*/)){
+    if ((protocol_num >= sizeof(g_rpc_protocols)/sizeof(g_rpc_protocols[0])) ||
+            (protocol_num != NRPC_PROTOCOL_DEFAULT_NUM)){
         _result = RPC_INNER_ERROR;
         _result_text = "protocol num not implement";
         return false; 
@@ -72,8 +72,7 @@ bool RpcSession::set_protocol(unsigned protocol_num)
 
     _protocol = g_rpc_protocols[protocol_num];
     _protocol_name = _protocol->name;
-    // TODO: how to reflact
-    _protocol_ctx = new DefaultProtocolCtx();
+    _protocol_ctx = _protocol->ctx_factory->create_ctx();
     if (!_protocol_ctx) {
         _result = RPC_INNER_ERROR;
         _result_text = "new protocol_ctx error";
@@ -85,6 +84,12 @@ bool RpcSession::set_protocol(unsigned protocol_num)
 bool RpcSession::set_iobuf(ngxplus::IOBuf* iobuf)
 {
     _iobuf = iobuf;
+    return true;
+}
+
+bool RpcSession::set_service_set(ServiceSet* service_set)
+{
+    _service_set = service_set;
     return true;
 }
 
