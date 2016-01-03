@@ -24,19 +24,25 @@ class Timer
 public:
     virtual ~Timer();
 
-    static char* ngx_asctime() {
-        char* result;
+    static long rawtime() {
         time_t rawtime;
-        struct tm * timeinfo;
-
         if (!NGX_PREINIT_FLAG) {
             time(&rawtime);
         } else {
             rawtime = ngx_time();
         }
-        timeinfo = localtime(&rawtime);
+        return rawtime;
+    }
+
+    static char* asctime() {
+        char* result;
+        time_t raw;
+        struct tm * timeinfo;
+
+        raw = (time_t)rawtime();
+        timeinfo = ::localtime(&raw);
         // result point to a static mem
-        result = asctime(timeinfo);
+        result = ::asctime(timeinfo);
         result[strlen(result)-1] = '\0';
         return result;
     }

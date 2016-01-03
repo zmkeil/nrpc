@@ -29,16 +29,16 @@ enum ParseResult {
 };
 
 // A set interface of a protocol
-typedef ParseResult (*Parse)(ngxplus::IOBuf* source, RpcSession* session, bool read_eof);
+typedef ParseResult (*Parse)(RpcSession* session, bool read_eof);
 
 typedef int (*PackRequest)(
         ngxplus::IOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
         Controller* controller, const google::protobuf::Message& request);
 
-typedef void (*ProcessRequest)(RpcSession* session, ngxplus::IOBuf* req_buf);
+typedef void (*ProcessRequest)(RpcSession* session);
 
-typedef void (*ProcessResponse)(RpcSession* session, ngxplus::IOBuf* resp_buf);
+typedef void (*ProcessResponse)(RpcSession* session);
 
 class ProtocolCtx {
 };
@@ -91,7 +91,7 @@ struct DefaultProtocolCtx : public ProtocolCtx {
 
     // for response
 };
-void default_send_rpc_response(Controller* cntl, long start_process_us);
+void default_send_rpc_response(Controller* cntl);
 
 struct HttpProtocolCtx : public ProtocolCtx {
     int version;

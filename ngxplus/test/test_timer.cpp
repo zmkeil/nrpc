@@ -13,7 +13,8 @@
 
 int main()
 {
-    LOG(NGX_LOG_NOTICE, "time is: %s", ngxplus::Timer::ngx_asctime());
+    LOG(NGX_LOG_NOTICE, "time is: %s", ngxplus::Timer::asctime());
 
+    LOG(NGX_LOG_NOTICE, "rawtime is: %ld", ngxplus::Timer::rawtime());
     return 0;
 }

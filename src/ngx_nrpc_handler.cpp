@@ -155,6 +155,9 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
             if (presult == PARSE_BROKEN) {
                 session->set_result_text("read broken");
             }
+            if (presult == PARSE_BAD_FORMAT) {
+                session->set_result_text("request bad format");
+            }
             return session->finalize();
         }
     }

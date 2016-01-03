@@ -16,7 +16,7 @@ public:
 		std::cout << "in Echo method" << std::endl;
         std::cout << "request msg: " << request->msg() << std::endl;
         LOG(NGX_LOG_LEVEL_NOTICE, "in Echo method");
-		return;
+		return done->Run();
 	}
 };
 
@@ -28,8 +28,6 @@ int main()
     nrpc::ServiceSet* service_set = server.push_service_set("*:8833");
     service_set = server.push_service_set("*:8899");
     service_set->add_service(&service);
-
-    // service_set.add_service(NULL);
 
     nrpc::ServerOption option;
     server.start(&option);

@@ -128,11 +128,13 @@ public:
     
     void set_session(RpcSession* session) {_session = session;}
     RpcSession* session() {return _session;}
-
     void set_request(google::protobuf::Message* request) {_request = request;}
     google::protobuf::Message* request() {return _request;}
     void set_response(google::protobuf::Message* response) {_response = response;}
     google::protobuf::Message* response() {return _response;}
+
+    void set_process_start_time(long start_process_us) {_start_process_us = start_process_us;}
+    long process_start_time() {return _start_process_us;}
 
 private:
     bool _is_close_connection;
@@ -144,6 +146,8 @@ private:
     RpcSession* _session;
     google::protobuf::Message* _request;
     google::protobuf::Message* _response;
+
+    long _start_process_us;
 };
 
 }

@@ -44,6 +44,7 @@ int main()
 
     // process request from iobuf
     nrpc::RpcSession* mock_session = new nrpc::RpcSession(NULL/*ngx_connection_t**/);
+    mock_session->set_iobuf(&iobuf);
     nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
     mock_service_set->add_service(&service);
     mock_session->set_service_set(mock_service_set);
@@ -52,8 +53,8 @@ int main()
     mock_session->set_protocol(PROTOCOL_NUM);
     nrpc::Protocol* protocol = mock_session->protocol();
 
-    protocol->parse(&iobuf, mock_session, true);
-    protocol->process_request(mock_session, &iobuf);
+    protocol->parse(mock_session, true);
+    protocol->process_request(mock_session);
 
     return 0;
 }
