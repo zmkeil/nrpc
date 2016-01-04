@@ -39,7 +39,7 @@ PROTO=nrpc_meta
 
 objs=ngx_nrpc_module.o \
 	 ngx_nrpc_handler.o \
-	 rpc_session.o \
+	 controller.o \
 	 server.o \
 	 service_set.o \
 	 policy/proto/nrpc_meta.pb.o \

@@ -7,30 +7,30 @@ extern "C" {
 #include <string.h>
 }
 #include <iostream>
-#include "rpc_session.h"
+#include "controller.h"
 #include "protocol.h"
 
 #include "channel.h"
 
 namespace nrpc {
 
-NrpcChannel::NrpcChannel(const std::string& server_address)
+Channel::Channel(const std::string& server_address)
 {
     // check address availability, give the ip:port
 
 }
 
-NrpcChannel::~NrpcChannel()
+Channel::~Channel()
 {
 }
 
-void NrpcChannel::CallMethod(const MethodDescriptor* method,
+void Channel::CallMethod(const MethodDescriptor* method,
         RpcController* controller, const Message* request,
         Message* response, Closure* done)
 {
     // async mode not implemented yet
     (void) done;
-    NrpcController* cntl = static_cast<RpcController*>(controller);
+    Controller* cntl = static_cast<RpcController*>(controller);
 
     ngxplus::IOBuf* msg = new ngxplus::IOBuf();
     int bytes = default_protocol.pack_request(msg, method, cntl, *request);
@@ -40,9 +40,7 @@ void NrpcChannel::CallMethod(const MethodDescriptor* method,
         return;
     }
 
-    RpcSession* session = new RpcSession();
-    session->set_cntl(cntl);
-    session->set_iobuf(msg);
+    cntl->set_iobuf(msg);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     bzero(&servaddr, sizeof(servaddr));
@@ -75,9 +73,9 @@ void NrpcChannel::CallMethod(const MethodDescriptor* method,
         }
     }
     // parse in read process
-    default_protocol.parse(session, true);
+    default_protocol.parse(cntl, true);
 
-    default_protocol.process_response(session);
+    default_protocol.process_response(cntl);
 }
 
 }

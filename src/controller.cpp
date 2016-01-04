@@ -8,20 +8,20 @@
   
  **********************************************/
 
-#include "rpc_session.h"
+#include "controller.h"
 
 namespace nrpc
 {
 
-RpcSession::RpcSession(ngx_connection_t* c) : _c(c)
+Controller::Controller(ngx_connection_t* c) : _c(c)
 {
 }
 
-RpcSession::~RpcSession()
+Controller::~Controller()
 {
 }
 
-bool RpcSession::init()
+bool Controller::init()
 {
     _service_set = (ServiceSet*)_c->listening->servers;
     _server = _service_set->server();
@@ -36,32 +36,32 @@ bool RpcSession::init()
     return true;
 }
 
-void RpcSession::finalize()
+void Controller::finalize()
 {
     // log
     return;
 }
 
 // set
-bool RpcSession::set_state(RPC_SESSION_STATE state)
+bool Controller::set_state(RPC_SESSION_STATE state)
 {
     _state = state;
     return true;
 }
 
-bool RpcSession::set_result(RPC_RESULT result)
+bool Controller::set_result(RPC_RESULT result)
 {
     _result = result;
     return true;
 }
 
-bool RpcSession::set_result_text(const char* result_text)
+bool Controller::set_result_text(const char* result_text)
 {
     _result_text = result_text;
     return true;
 }
 
-bool RpcSession::set_protocol(unsigned protocol_num)
+bool Controller::set_protocol(unsigned protocol_num)
 {
     if ((protocol_num >= sizeof(g_rpc_protocols)/sizeof(g_rpc_protocols[0])) ||
             (protocol_num != NRPC_PROTOCOL_DEFAULT_NUM)){
@@ -81,62 +81,62 @@ bool RpcSession::set_protocol(unsigned protocol_num)
     return true;
 }
 
-bool RpcSession::set_iobuf(ngxplus::IOBuf* iobuf)
+bool Controller::set_iobuf(ngxplus::IOBuf* iobuf)
 {
     _iobuf = iobuf;
     return true;
 }
 
 // get
-ngxplus::IOBuf* RpcSession::iobuf()
+ngxplus::IOBuf* Controller::iobuf()
 {
     return _iobuf;
 }
 
-Protocol* RpcSession::protocol()
+Protocol* Controller::protocol()
 {
     return _protocol;
 }
 
-void* RpcSession::protocol_ctx()
+void* Controller::protocol_ctx()
 {
     return _protocol_ctx;
 }
 
-RPC_SESSION_STATE RpcSession::state()
+RPC_SESSION_STATE Controller::state()
 {
     return _state;
 }
 
-ServiceSet* RpcSession::service_set()
+ServiceSet* Controller::service_set()
 {
     return _service_set;
 }
 
-ngx_connection_t* RpcSession::connection()
+ngx_connection_t* Controller::connection()
 {
     return _c;
 }
 
-int32_t RpcSession::process_error_code()
+int32_t Controller::process_error_code()
 {
     return _process_error_code;
 }
 
-std::string RpcSession::process_error_text()
+std::string Controller::process_error_text()
 {
     return _process_error_text;
 }
 
 // for server options
-int RpcSession::read_timeout()
+int Controller::read_timeout()
 {
     return _server->read_timeout();
 }
 
 
 // private
-bool RpcSession::set_service_set(ServiceSet* service_set)
+bool Controller::set_service_set(ServiceSet* service_set)
 {
     _service_set = service_set;
     return true;

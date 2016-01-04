@@ -16,7 +16,7 @@ extern "C" {
 #include <string.h>
 }
 #include <iostream>
-#include "rpc_session.h"
+#include "controller.h"
 #include "protocol.h"
 #include "echo.pb.h"
 

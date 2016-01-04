@@ -5,7 +5,6 @@ extern "C" {
 #include <ngx_event.h>
 #include <ngx_core.h>
 }
-#include "rpc_session.h"
 
 namespace nrpc {
 

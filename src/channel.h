@@ -2,11 +2,11 @@
 
 namespace nrpc {
 
-class NrpcChannel : public google::protobuf::RpcChannel
+class Channel : public google::protobuf::RpcChannel
 {
 public:
-    NrpcChannel(std::string& server_address);
-    virtual ~NrpcChannel();
+    Channel(std::string& server_address);
+    virtual ~Channel();
 
     void CallMethod(const MethodDescriptor* method,
                     RpcController* controller,

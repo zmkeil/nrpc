@@ -12,7 +12,6 @@
 namespace nrpc
 {
 
-class RpcSession;
 class Controller;
 
 enum ParseResult {
@@ -29,16 +28,16 @@ enum ParseResult {
 };
 
 // A set interface of a protocol
-typedef ParseResult (*Parse)(RpcSession* session, bool read_eof);
+typedef ParseResult (*Parse)(Controller* cntl, bool read_eof);
 
 typedef int (*PackRequest)(
         ngxplus::IOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
-        Controller* controller, const google::protobuf::Message& request);
+        Controller* cntl, const google::protobuf::Message& request);
 
-typedef void (*ProcessRequest)(RpcSession* session);
+typedef void (*ProcessRequest)(Controller* cntl);
 
-typedef void (*ProcessResponse)(RpcSession* session);
+typedef void (*ProcessResponse)(Controller* cntl);
 
 class ProtocolCtx {
 };

@@ -3,7 +3,6 @@
 #include <google/protobuf/message.h>
 #include "info_log_context.h"
 #include "protocol.h"
-#include "rpc_session.h"
 #include "controller.h"
 #include "ngx_nrpc_handler.h"
 
@@ -11,13 +10,13 @@ namespace nrpc
 {
 
 // Interfaces of std serialize policy
-static ParseResult default_parse_message(RpcSession* session, bool read_eof);
+static ParseResult default_parse_message(Controller* cntl, bool read_eof);
 static int default_pack_request(
         ngxplus::IOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
         Controller* cntl, const google::protobuf::Message& request);
-static void default_process_request(RpcSession* session);
-static void default_process_response(RpcSession* session);
+static void default_process_request(Controller* cntl);
+static void default_process_response(Controller* cntl);
 
 class DefaultProtocolCtxFactory : public ProtocolCtxFactory
 {
@@ -54,10 +53,10 @@ static bool default_nrpc_detecte_format(ngxplus::IOBuf* source, int32_t *meta_si
 }
 
 // Parse binary format of nrpc
-ParseResult default_parse_message(RpcSession* session, bool read_eof)
+ParseResult default_parse_message(Controller* cntl, bool read_eof)
 {
-    ngxplus::IOBuf* source = session->iobuf();
-    DefaultProtocolCtx* pctx = static_cast<DefaultProtocolCtx*>(session->protocol_ctx());
+    ngxplus::IOBuf* source = cntl->iobuf();
+    DefaultProtocolCtx* pctx = static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx());
     if (pctx->meta_size == -1) {
         if (!default_nrpc_detecte_format(source, &pctx->meta_size, &pctx->body_size)) {
             return read_eof ? PARSE_BAD_FORMAT: PARSE_INCOMPLETE;
@@ -74,7 +73,7 @@ ParseResult default_parse_message(RpcSession* session, bool read_eof)
         source->cutn((int)pctx->meta_size);
         ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(source);
         if (!rpc_meta->ParseFromZeroCopyStream(&zero_in_stream)) {
-            session->set_result_text("parse meta error");
+            cntl->set_result_text("parse meta error");
             return PARSE_BAD_META;
         }
         source->carrayon();
@@ -144,21 +143,21 @@ int default_pack_request(
 }
 
 // Actions to a (client) request in nrpc format.
-void default_process_request(RpcSession* session)
+void default_process_request(Controller* cntl)
 {
-    ngxplus::IOBuf* req_buf = session->iobuf();
+    ngxplus::IOBuf* req_buf = cntl->iobuf();
     long start_process_us = ngxplus::Timer::rawtime()/*s*/;
-    const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(session->protocol_ctx()));
+    const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx()));
     const RpcRequestMeta& req_meta = pctx->rpc_meta->request();
 
-    ServiceSet* service_set = static_cast<ServiceSet*>(session->service_set());
+    ServiceSet* service_set = static_cast<ServiceSet*>(cntl->service_set());
     std::string full_name = req_meta.service_name() + "_" + req_meta.method_name();
     const MethodProperty* method_property =
             service_set->find_method_property_by_full_name(full_name);
     if (!method_property) {
-        session->set_result(RPC_PROCESS_ERROR);
-        session->set_result_text("rpc method not found");
-        return session->finalize();
+        cntl->set_result(RPC_PROCESS_ERROR);
+        cntl->set_result_text("rpc method not found");
+        return cntl->finalize();
     }
 
     const google::protobuf::MethodDescriptor* method_descriptor =
@@ -175,34 +174,32 @@ void default_process_request(RpcSession* session)
     req_buf->cutn(body_size);
     ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(req_buf);
     if (!req->ParseFromZeroCopyStream(&zero_in_stream)) {
-        session->set_result(RPC_PROCESS_ERROR);
-        session->set_result_text("Failed to parse rpc request");
-        return session->finalize();
+        cntl->set_result(RPC_PROCESS_ERROR);
+        cntl->set_result_text("Failed to parse rpc request");
+        return cntl->finalize();
     }
     // release the remian payload
     req_buf->carrayon();
     req_buf->release_all();
 
-    std::unique_ptr<Controller> cntl(new (std::nothrow) Controller);
     cntl->set_process_start_time(start_process_us);
     // client.options --> req_meta -->server.cntl
-    cntl->set_session(session);
     cntl->set_request(req.get());
     cntl->set_response(resp.get());
 
     google::protobuf::Closure* done = google::protobuf::NewCallback<Controller*>(
-            &default_send_rpc_response, cntl.get());
+            &default_send_rpc_response, cntl);
  
-    return service->CallMethod(method_descriptor, cntl.release(),
+    return service->CallMethod(method_descriptor, cntl,
             req.release(), resp.release(), done);
 }
 
 // Actions to a (server) response in nrpc format.
 // for client end
-void default_process_response(RpcSession* session)
+void default_process_response(Controller* cntl)
 {
-    (void) session;
-    ngxplus::IOBuf* resp_buf = session->iobuf();
+    (void) cntl;
+    ngxplus::IOBuf* resp_buf = cntl->iobuf();
     (void) resp_buf;
 
     return;
@@ -212,25 +209,26 @@ void default_send_rpc_response(Controller* cntl)
 {
     long start_process_us = cntl->process_start_time();
     (void) start_process_us;
-    RpcSession* rpc_session = cntl->session();
+    //TODO: modify
+    Controller* rpc_cntl = cntl;
     const google::protobuf::Message* resp = cntl->response();
 
-    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)rpc_session->protocol_ctx())->rpc_meta;
+    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)rpc_cntl->protocol_ctx())->rpc_meta;
     RpcResponseMeta* response_meta = rpc_meta->mutable_response();
-    response_meta->set_error_code(rpc_session->process_error_code());
-    response_meta->set_error_text(rpc_session->process_error_text());
-    ngxplus::IOBuf* iobuf = rpc_session->iobuf();
+    response_meta->set_error_code(rpc_cntl->process_error_code());
+    response_meta->set_error_text(rpc_cntl->process_error_text());
+    ngxplus::IOBuf* iobuf = rpc_cntl->iobuf();
 
     // pack nrpc default packages
     if (!default_nrpc_pack_handle(iobuf, *rpc_meta, *resp)) {
-        rpc_session->set_result(RPC_INNER_ERROR);
-        rpc_session->set_result_text("serialize response pack error");
-        rpc_session->finalize();
+        rpc_cntl->set_result(RPC_INNER_ERROR);
+        rpc_cntl->set_result_text("serialize response pack error");
+        rpc_cntl->finalize();
     }
 
     // really send response data to client
-    rpc_session->set_state(RPC_SESSION_SENDING_RESPONSE);
-    ngx_connection_t* c = rpc_session->connection();
+    rpc_cntl->set_state(RPC_SESSION_SENDING_RESPONSE);
+    ngx_connection_t* c = rpc_cntl->connection();
     c->write->handler = ngx_nrpc_send_response;
     return ngx_nrpc_send_response(c->write);
 }

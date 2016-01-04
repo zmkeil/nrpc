@@ -1,15 +1,16 @@
 #include "ngx_nrpc_handler.h"
+#include "controller.h"
 #include "protocol.h"
 
 namespace nrpc {
 
 void ngx_nrpc_init_connection(ngx_connection_t *c)
 {
-    auto rpc_session = new RpcSession(c);
-    if (!rpc_session->init()) {
-        return rpc_session->finalize();
+    auto cntl = new Controller(c);
+    if (!cntl->init()) {
+        return cntl->finalize();
     }
-    c->data = (void*)rpc_session;
+    c->data = (void*)cntl;
 
     c->read->handler = ngx_nrpc_determine_policy;
     return ngx_nrpc_determine_policy(c->read);
@@ -20,24 +21,24 @@ void ngx_nrpc_init_connection(ngx_connection_t *c)
 void ngx_nrpc_determine_policy(ngx_event_t *rev)
 {
     ngx_connection_t *c = (ngx_connection_t*)rev->data;
-    RpcSession* rpc_session = (RpcSession*)c->data;
+    Controller* cntl = (Controller*)c->data;
 
     if (rev->timedout) {
         c->timedout = 1;
-        rpc_session->set_result(RPC_READ_TIMEOUT);
-        return rpc_session->finalize();
+        cntl->set_result(RPC_READ_TIMEOUT);
+        return cntl->finalize();
     }
 
     char first_character;
     int n = c->recv(c, (u_char*)&first_character, 1);
     if(n == NGX_AGAIN) {
         if (!rev->timer_set) {
-            ngx_add_timer(rev, rpc_session->read_timeout());
+            ngx_add_timer(rev, cntl->read_timeout());
         }
         if (ngx_handle_read_event(rev, 0) != NGX_OK) {
-            rpc_session->set_result(RPC_INNER_ERROR);
-            rpc_session->set_result_text("hanlde read event error");
-            return rpc_session->finalize();
+            cntl->set_result(RPC_INNER_ERROR);
+            cntl->set_result_text("hanlde read event error");
+            return cntl->finalize();
         }
         // for next event
         return;
@@ -45,8 +46,8 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
 
     if((n == 0) || (n == NGX_ERROR)) {
         // read eof or error
-        rpc_session->set_result(RPC_READ_ERROR);
-        rpc_session->finalize();
+        cntl->set_result(RPC_READ_ERROR);
+        cntl->finalize();
     }
 
     // n == 1, determin the protocol
@@ -65,8 +66,8 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
         protocol_num = 100/*invaild*/;
         break;
     }
-    if (!rpc_session->set_protocol(protocol_num/*default_protocol*/)) {
-        return rpc_session->finalize();
+    if (!cntl->set_protocol(protocol_num/*default_protocol*/)) {
+        return cntl->finalize();
     }
 
     // get iobuf, and read the following data
@@ -74,12 +75,12 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     char* buf;
     int len = iobuf->alloc(&buf, 1, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
     if (len != 1) {
-        rpc_session->set_result(RPC_INNER_ERROR);
-        rpc_session->set_result_text("determin alloc error");
-        return rpc_session->finalize();
+        cntl->set_result(RPC_INNER_ERROR);
+        cntl->set_result_text("determin alloc error");
+        return cntl->finalize();
     }
     buf[0] = first_character;
-    rpc_session->set_iobuf(iobuf);
+    cntl->set_iobuf(iobuf);
 
     rev->handler = ngx_nrpc_read_request;
     return ngx_nrpc_read_request(rev);
@@ -88,31 +89,31 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
 void ngx_nrpc_read_request(ngx_event_t *rev)
 {
     ngx_connection_t *c = (ngx_connection_t*)rev->data;
-    RpcSession *session = (RpcSession*)c->data;
+    Controller *cntl = (Controller*)c->data;
 
     if (rev->timedout) {
         c->timedout = 1;
-        session->set_result(RPC_READ_TIMEOUT);
-        return session->finalize();
+        cntl->set_result(RPC_READ_TIMEOUT);
+        return cntl->finalize();
     }
 
-    RPC_SESSION_STATE session_state = session->state();
-    if (session_state != RPC_SESSION_READING_REQUEST) {
-        session->set_result(RPC_INNER_ERROR);
-        session->set_result_text("should not come into read request");
-        return session->finalize();
+    RPC_SESSION_STATE cntl_state = cntl->state();
+    if (cntl_state != RPC_SESSION_READING_REQUEST) {
+        cntl->set_result(RPC_INNER_ERROR);
+        cntl->set_result_text("should not come into read request");
+        return cntl->finalize();
     }
 
-    ngxplus::IOBuf *iobuf = session->iobuf();
+    ngxplus::IOBuf *iobuf = cntl->iobuf();
     ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(iobuf);
 
     char* buf;
     int size;
     for(;;) {
         if (!zero_out_stream.Next((void**)&buf, &size)) {
-            session->set_result(RPC_INNER_ERROR);
-            session->set_result_text("read request alloc error");
-            session->finalize();
+            cntl->set_result(RPC_INNER_ERROR);
+            cntl->set_result_text("read request alloc error");
+            cntl->finalize();
         }
         if (size == 0) {
             continue;
@@ -122,8 +123,8 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
             continue;
         }
         if (len == NGX_ERROR) {
-            session->set_result(RPC_READ_ERROR);
-            return session->finalize();
+            cntl->set_result(RPC_READ_ERROR);
+            return cntl->finalize();
         }
 
         // read eof or again
@@ -131,34 +132,34 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         if (len == 0) {
             read_eof = true;
         }
-        Protocol* protocol = session->protocol();
-        ParseResult presult = protocol->parse(iobuf, session, read_eof);
+        Protocol* protocol = cntl->protocol();
+        ParseResult presult = protocol->parse(cntl, read_eof);
         if (presult == PARSE_DONE) {
             rev->handler = ngx_nrpc_dummy_read;
             if (rev->timer_set) {
                 ngx_del_timer(rev);
             }
-            session->set_state(RPC_SESSION_PROCESSING);
-            return protocol->process_request(session, iobuf);
+            cntl->set_state(RPC_SESSION_PROCESSING);
+            return protocol->process_request(cntl);
         }
         else if (presult == PARSE_INCOMPLETE) {
-            ngx_add_timer(rev, session->read_timeout());
+            ngx_add_timer(rev, cntl->read_timeout());
             if (ngx_handle_read_event(rev, 0) != NGX_OK) {
-                session->set_result(RPC_INNER_ERROR);
-                session->set_result_text("hanlde read event error");
-                return session->finalize();
+                cntl->set_result(RPC_INNER_ERROR);
+                cntl->set_result_text("hanlde read event error");
+                return cntl->finalize();
             }
             return;
         }
         else { // bad format OR broken OR bad meta
-            session->set_result(RPC_READ_ERROR);
+            cntl->set_result(RPC_READ_ERROR);
             if (presult == PARSE_BROKEN) {
-                session->set_result_text("read broken");
+                cntl->set_result_text("read broken");
             }
             if (presult == PARSE_BAD_FORMAT) {
-                session->set_result_text("request bad format");
+                cntl->set_result_text("request bad format");
             }
-            return session->finalize();
+            return cntl->finalize();
         }
     }
 }
@@ -172,8 +173,8 @@ void ngx_nrpc_dummy_read(ngx_event_t* rev)
 void ngx_nrpc_send_response(ngx_event_t* wev)
 {
     ngx_connection_t* c = (ngx_connection_t*)wev->data;
-    RpcSession* rpc_session = (RpcSession*)c->data;
-    ngxplus::IOBuf* iobuf = rpc_session->iobuf();
+    Controller* cntl = (Controller*)c->data;
+    ngxplus::IOBuf* iobuf = cntl->iobuf();
 
     ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(iobuf);
     char* buf;
@@ -185,12 +186,12 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
         int n = c->send(c, (u_char*)buf, size);
         if (n < size) {
             if (!wev->timer_set) {
-                ngx_add_timer(wev, 1/*rpc_session->write_timeout()*/);
+                ngx_add_timer(wev, 1/*cntl->write_timeout()*/);
             }
             if (ngx_handle_write_event(wev, 0) != NGX_OK) {
-                rpc_session->set_result(RPC_INNER_ERROR);
-                rpc_session->set_result_text("hanlde write event error");
-                return rpc_session->finalize();
+                cntl->set_result(RPC_INNER_ERROR);
+                cntl->set_result_text("hanlde write event error");
+                return cntl->finalize();
             }
             // for the next event_loop
             return;
@@ -198,9 +199,9 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
         // n == size, read next
     }
     // send all to tcp buf
-    rpc_session->set_state(RPC_SESSION_LOGING);
-    // return rpc_session->get_log_handler()(rpc_session);
-    return rpc_session->finalize();
+    cntl->set_state(RPC_SESSION_LOGING);
+    // return cntl->get_log_handler()(cntl);
+    return cntl->finalize();
 }
 
 }

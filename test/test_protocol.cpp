@@ -9,7 +9,7 @@
  **********************************************/
 
 #include <google/protobuf/text_format.h>
-#include "rpc_session.h"
+#include "controller.h"
 #include "protocol.h"
 #include "echo.pb.h"
 
@@ -43,18 +43,18 @@ int main()
 
 
     // process request from iobuf
-    nrpc::RpcSession* mock_session = new nrpc::RpcSession(NULL/*ngx_connection_t**/);
-    mock_session->set_iobuf(&iobuf);
+    nrpc::Controller* mock_cntl = new nrpc::Controller(NULL/*ngx_connection_t**/);
+    mock_cntl->set_iobuf(&iobuf);
     nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
     mock_service_set->add_service(&service);
-    mock_session->set_service_set(mock_service_set);
+    mock_cntl->set_service_set(mock_service_set);
 
     // mock determine protocol
-    mock_session->set_protocol(PROTOCOL_NUM);
-    nrpc::Protocol* protocol = mock_session->protocol();
+    mock_cntl->set_protocol(PROTOCOL_NUM);
+    nrpc::Protocol* protocol = mock_cntl->protocol();
 
-    protocol->parse(mock_session, true);
-    protocol->process_request(mock_session);
+    protocol->parse(mock_cntl, true);
+    protocol->process_request(mock_cntl);
 
     return 0;
 }
