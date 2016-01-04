@@ -2,7 +2,7 @@
 /***********************************************
   File name		: log.h
   Create date	: 2015-12-17 23:12
-  Modified date : 2015-12-24 01:38
+  Modified date : 2016-01-04 23:24
   Author		: zmkeil, alibaba.inc
   Express : 
     Usually, log module is first inited,
@@ -30,6 +30,14 @@ namespace ngxplus {
 #define NGX_LOG_LEVEL_NOTICE    6
 #define NGX_LOG_LEVEL_INFO      7
 #define NGX_LOG_LEVEL_DEBUG     8
+
+#define DEBUG       NGX_LOG_LEVEL_DEBUG
+#define INFO        NGX_LOG_LEVEL_INFO
+#define NOTICE      NGX_LOG_LEVEL_NOTICE
+#define WARN        NGX_LOG_LEVEL_WARN
+#define ERROR       NGX_LOG_LEVEL_ERROR
+#define ALERT       NGX_LOG_LEVEL_ALERT
+#define EMERG       NGX_LOG_LEVEL_EMERG
 
 class Log 
 {

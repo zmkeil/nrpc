@@ -1,8 +1,8 @@
 
 /***********************************************
-  File name		: rpc_session.h
+  File name		: controller.h
   Create date	: 2015-12-02 23:47
-  Modified date : 2015-12-31 03:26
+  Modified date : 2016-01-05 00:57
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -56,7 +56,7 @@ enum RPC_RESULT {
 class Controller : public google::protobuf::RpcController
 {
 public:
-    Controller(ngx_connection_t* c);
+    Controller();
     virtual ~Controller();
 
     // Client-side methods ---------------------------------------------
@@ -74,7 +74,13 @@ public:
     virtual bool Failed() const {return true;}
 
     // If Failed() is true, returns a human-readable description of the error.
-    virtual std::string ErrorText() const {return "OK";}
+    virtual std::string ErrorText() const {
+        // before (and in) protocol->process_response (in other words, in rpc frame),
+        // return the _result_text; otherwise, the rpc procedure is successly completed,
+        // than get error_code and error_text from rpc_meta->response
+        // TODO: client two-level ErrorText
+        return std::string("OK");
+    }
 
     // Advises the RPC system that the caller desires that the RPC call be
     // canceled.  The RPC system may cancel it immediately, may wait awhile and
@@ -93,7 +99,13 @@ public:
     // you need to return machine-readable information about failures, you
     // should incorporate it into your response protocol buffer and should
     // NOT call SetFailed().
-    virtual void SetFailed(const std::string& reason) {return;}
+    // In user_defined service->method, use this api to set the reson into rpc_meta's
+    // error_code and error_text; in rpc frame, we usually close the connection when error
+    // TODO: server set reason into rpc_meta->response
+    virtual void SetFailed(const std::string& reason) {
+        (void) reason;
+        return;
+    }
 
     // If true, indicates that the client canceled the RPC, so the server may
     // as well give up on replying to it.  The server should still call the
@@ -107,7 +119,10 @@ public:
     // will be called immediately.
     //
     // NotifyOnCancel() must be called no more than once per request.
-    virtual void NotifyOnCancel(google::protobuf::Closure* callback) {return;}
+    virtual void NotifyOnCancel(google::protobuf::Closure* callback) {
+        (void) callback;
+        return;
+    }
 
     // -------------------------------------------------------------------
     //                      Both-side methods.
@@ -130,7 +145,7 @@ public:
 
 
 
-    bool init();
+    bool server_side_init(ngx_connection_t* c);
 
     void finalize();
 
@@ -148,8 +163,6 @@ public:
     RPC_SESSION_STATE state();
     ServiceSet* service_set();
     ngx_connection_t* connection();
-    int32_t process_error_code();
-    std::string process_error_text();
 
     // for server options
     int read_timeout();
@@ -168,36 +181,43 @@ private:
     bool set_service_set(ServiceSet* service_set);
 
 private:
+    // rpc_frame describes for both of server and client side;
+    // the order of _state is different between server and client side;
+    // the _result and _result_text describe the rpc_frame errors,
+    // the user_define rpc_service errors are transmited from server to client
+    // by rpc_meta->response
     RPC_SESSION_STATE _state;
     RPC_RESULT _result;
-    // for inner error to describe
     const char* _result_text;
 
+    // protocol for both of server and client side
     Protocol* _protocol;
     void* _protocol_ctx;
     const char* _protocol_name;
-    ServiceSet* _service_set;
-    Server* _server;
 
-    ngx_connection_t* _c;
-    ngxplus::IOBuf* _iobuf;
-
-    //RpcClientCtx _client;
-    // for response meta
-    int32_t _process_error_code;
-    std::string _process_error_text;
-
-
-    // add from cntl
-    int _remote_side;
-    int _local_side;
-    int _error_code;
-
+    // rpc data for both of server and client side
+    // In server: set req and resp in protocol.process_request, then excute user_defined
+    // method, and then get resp in default_send_rpc_response and send it to client.
+    // In client: set resp in stud->method(Channel->CallMethod), then get in protocol.
+    // process_response
     google::protobuf::Message* _request;
     google::protobuf::Message* _response;
 
-    long _start_process_us;
+    // iobuf for both of server and client side
+    // In server: first >> iobuf and then << iobuf, In client: excuted in contrast
+    // destory it in finalize()
+    ngxplus::IOBuf* _iobuf;
 
+    // stastics for both of server and client side
+    long _start_process_us;
+    int _remote_side;
+    int _local_side;
+
+
+    // server and service informations for server side
+    ServiceSet* _service_set;
+    Server* _server;
+    ngx_connection_t* _ngx_connection;
 };
 
 }

@@ -21,16 +21,16 @@ void ServiceSet::set_address(ServiceAddress* service_address)
 bool ServiceSet::add_service(google::protobuf::Service* service)
 {
 	if (!service) {
-        LOG(NGX_LOG_WARN, "add service NULL");
+        LOG(WARN, "add service NULL");
 	    return false;
 	}
     const google::protobuf::ServiceDescriptor* sd = service->GetDescriptor();
 	if (_service_map.find(sd->name()) != _service_map.end()) {
-        LOG(NGX_LOG_WARN, "the service \"%s\" already existed", sd->name().c_str());
+        LOG(WARN, "the service \"%s\" already existed", sd->name().c_str());
 	    return false;
 	}
 	if (!sd->method_count()) {
-        LOG(NGX_LOG_WARN, "the service \"%s\" has no method", sd->name().c_str());
+        LOG(WARN, "the service \"%s\" has no method", sd->name().c_str());
 	    return false;
 	}
 

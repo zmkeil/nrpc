@@ -1,8 +1,8 @@
 
 /***********************************************
-  File name		: rpc_session.cpp
+  File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2015-12-31 03:31
+  Modified date : 2016-01-05 00:50
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -13,7 +13,7 @@
 namespace nrpc
 {
 
-Controller::Controller(ngx_connection_t* c) : _c(c)
+Controller::Controller()
 {
 }
 
@@ -21,10 +21,12 @@ Controller::~Controller()
 {
 }
 
-bool Controller::init()
+bool Controller::server_side_init(ngx_connection_t* c)
 {
-    _service_set = (ServiceSet*)_c->listening->servers;
+    _ngx_connection = c;
+    _service_set = (ServiceSet*)_ngx_connection->listening->servers;
     _server = _service_set->server();
+    // in server side, start the session with READING_REQUEST
     _state = RPC_SESSION_READING_REQUEST;
     // cmp c->local_sockaddr with service_set.address
 /*     if (not equal) {
@@ -115,18 +117,9 @@ ServiceSet* Controller::service_set()
 
 ngx_connection_t* Controller::connection()
 {
-    return _c;
+    return _ngx_connection;
 }
 
-int32_t Controller::process_error_code()
-{
-    return _process_error_code;
-}
-
-std::string Controller::process_error_text()
-{
-    return _process_error_text;
-}
 
 // for server options
 int Controller::read_timeout()

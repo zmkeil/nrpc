@@ -2,7 +2,7 @@
 /***********************************************
   File name		: server.h
   Create date	: 2015-12-02 22:04
-  Modified date : 2015-12-31 02:30
+  Modified date : 2016-01-04 23:24
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -17,12 +17,6 @@ extern "C" {
 #include <vector>
 #include <string>
 #include "service_set.h"
-
-#define NOTICE NGX_LOG_NOTICE
-#define WARN NGX_LOG_WARN
-#define ERR NGX_LOG_ERR
-#define ALERT NGX_LOG_ALERT
-#define EMERG NGX_LOG_EMERG
 
 namespace nrpc {
 

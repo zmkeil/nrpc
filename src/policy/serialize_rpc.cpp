@@ -101,7 +101,7 @@ static bool default_nrpc_pack_handle(
 
     ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
     if (!rpc_meta.SerializeToZeroCopyStream(&zero_out_stream)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "Failed to serialize rpc_meta in default_nrpc_pack_handle");
+        LOG(ALERT, "Failed to serialize rpc_meta in default_nrpc_pack_handle");
         return false;
     }
     int meta_size = zero_out_stream.ByteCount() - 12;
@@ -109,7 +109,7 @@ static bool default_nrpc_pack_handle(
     buf += 4;
 
     if (!rpc_body.SerializeToZeroCopyStream(&zero_out_stream)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "Failed to serialize rpc_body(req/resp) in default_nrpc_pack_handle");
+        LOG(ALERT, "Failed to serialize rpc_body(req/resp) in default_nrpc_pack_handle");
         return false;
     }
     int body_size = zero_out_stream.ByteCount() - 12 - meta_size;
@@ -130,7 +130,7 @@ int default_pack_request(
     RpcRequestMeta* req_meta = meta.mutable_request();
     const google::protobuf::ServiceDescriptor* service = method->service();
     if (!service) {
-        LOG(NGX_LOG_LEVEL_ALERT, "Failed to find the service the method_descriptor belongs to");
+        LOG(ALERT, "Failed to find the service the method_descriptor belongs to");
         return -1;
     }
     req_meta->set_service_name(service->name());
@@ -189,7 +189,7 @@ void default_process_request(Controller* cntl)
 
     google::protobuf::Closure* done = google::protobuf::NewCallback<Controller*>(
             &default_send_rpc_response, cntl);
- 
+
     return service->CallMethod(method_descriptor, cntl,
             req.release(), resp.release(), done);
 }
@@ -219,28 +219,22 @@ void default_process_response(Controller* cntl)
 
 void default_send_rpc_response(Controller* cntl)
 {
-    long start_process_us = cntl->process_start_time();
-    (void) start_process_us;
-    //TODO: modify
-    Controller* rpc_cntl = cntl;
     const google::protobuf::Message* resp = cntl->response();
-
-    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)rpc_cntl->protocol_ctx())->rpc_meta;
-    RpcResponseMeta* response_meta = rpc_meta->mutable_response();
-    response_meta->set_error_code(rpc_cntl->process_error_code());
-    response_meta->set_error_text(rpc_cntl->process_error_text());
-    ngxplus::IOBuf* iobuf = rpc_cntl->iobuf();
+    // the rpc_meta->response.error_code/text is setted in user_defined
+    // service.method, with cntl->SetFailed(string&)
+    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)cntl->protocol_ctx())->rpc_meta;
+    ngxplus::IOBuf* iobuf = cntl->iobuf();
 
     // pack nrpc default packages
     if (!default_nrpc_pack_handle(iobuf, *rpc_meta, *resp)) {
-        rpc_cntl->set_result(RPC_INNER_ERROR);
-        rpc_cntl->set_result_text("serialize response pack error");
-        rpc_cntl->finalize();
+        cntl->set_result(RPC_INNER_ERROR);
+        cntl->set_result_text("serialize response pack error");
+        cntl->finalize();
     }
 
     // really send response data to client
-    rpc_cntl->set_state(RPC_SESSION_SENDING_RESPONSE);
-    ngx_connection_t* c = rpc_cntl->connection();
+    cntl->set_state(RPC_SESSION_SENDING_RESPONSE);
+    ngx_connection_t* c = cntl->connection();
     c->write->handler = ngx_nrpc_send_response;
     return ngx_nrpc_send_response(c->write);
 }

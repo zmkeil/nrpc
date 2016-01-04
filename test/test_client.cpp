@@ -11,7 +11,7 @@ int main()
         return -1;
     }
 
-    nrpc::Controller cntl(NULL);
+    nrpc::Controller cntl;
 
     nrpc::EchoRequest req;
     req.set_msg("hello client");

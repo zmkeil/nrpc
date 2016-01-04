@@ -18,7 +18,7 @@ bool IOBufAsZeroCopyInputStream::Next(const void** data, int* size)
     int ret = _buf->read((const char**)data);
     if (ret >= 0) {
         *size = ret;
-        LOG(NGX_LOG_LEVEL_INFO, "zero_input_stream next %d bytes", ret);
+        LOG(NGX_LOG_LEVEL_DEBUG, "zero_input_stream next %d bytes", ret);
         return true;
     }
 
@@ -27,14 +27,14 @@ bool IOBufAsZeroCopyInputStream::Next(const void** data, int* size)
 
 void IOBufAsZeroCopyInputStream::BackUp(int count)
 {
-    LOG(NGX_LOG_LEVEL_INFO, "zero_input_stream backup %d bytes", count);
+    LOG(NGX_LOG_LEVEL_DEBUG, "zero_input_stream backup %d bytes", count);
     _buf->back(count);
 }
 
 bool IOBufAsZeroCopyInputStream::Skip(int count)
 {
     int ret = _buf->skip((size_t)count);
-    LOG(NGX_LOG_LEVEL_INFO, "zero_input_stream skip %d bytes", ret);
+    LOG(NGX_LOG_LEVEL_DEBUG, "zero_input_stream skip %d bytes", ret);
     return (ret == count) ? true : false;
 }
 
@@ -61,13 +61,13 @@ bool IOBufAsZeroCopyOutputStream::Next(void** data, int* size)
         return false;
     }
     *size = ret;
-    LOG(NGX_LOG_LEVEL_INFO, "zero_output_stream next %d bytes", ret);
+    LOG(NGX_LOG_LEVEL_DEBUG, "zero_output_stream next %d bytes", ret);
     return true;
 }
 
 void IOBufAsZeroCopyOutputStream::BackUp(int count)
 {
-    LOG(NGX_LOG_LEVEL_INFO, "zero_output_stream backup %d bytes", count);
+    LOG(NGX_LOG_LEVEL_DEBUG, "zero_output_stream backup %d bytes", count);
     _buf->reclaim(count);
 }
 

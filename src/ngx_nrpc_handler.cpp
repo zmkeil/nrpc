@@ -6,8 +6,8 @@ namespace nrpc {
 
 void ngx_nrpc_init_connection(ngx_connection_t *c)
 {
-    auto cntl = new Controller(c);
-    if (!cntl->init()) {
+    auto cntl = new Controller();
+    if (!cntl->server_side_init(c)) {
         return cntl->finalize();
     }
     c->data = (void*)cntl;
@@ -128,6 +128,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         }
 
         // read eof or again
+        // if again, also parse it, and ignore the follow stream if PARSE_DONE
         bool read_eof = false;
         if (len == 0) {
             read_eof = true;
@@ -200,7 +201,6 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
     }
     // send all to tcp buf
     cntl->set_state(RPC_SESSION_LOGING);
-    // return cntl->get_log_handler()(cntl);
     return cntl->finalize();
 }
 

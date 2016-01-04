@@ -43,7 +43,7 @@ int main()
 
 
     // process request from iobuf
-    nrpc::Controller* mock_cntl = new nrpc::Controller(NULL/*ngx_connection_t**/);
+    nrpc::Controller* mock_cntl = new nrpc::Controller();
     mock_cntl->set_iobuf(&iobuf);
     nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
     mock_service_set->add_service(&service);
