@@ -111,19 +111,22 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
         cntl->set_result_text("create sockfd erro");
         return cntl->finalize();
     }
-    if (!connect_with_timeout(sockfd, (struct sockaddr*)&_servaddr, _servaddr_len,
-                _option->connection_timeout)) {
-        cntl->set_result(RPC_SEND_ERROR);
-        cntl->set_result_text("connect server erro");
-        return cntl->finalize();
-    }
+
+    connect(sockfd, (struct sockaddr *) &_servaddr, sizeof(_servaddr));
+
+//    if (!connect_with_timeout(sockfd, (struct sockaddr*)&_servaddr, _servaddr_len,
+//                _option->connection_timeout)) {
+//        cntl->set_result(RPC_SEND_ERROR);
+//        cntl->set_result_text("connect server erro");
+//        return cntl->finalize();
+//    }
 
     // implement a simply sync mode client
     // here set the timeout for send and recv
-    struct timeval send_timeout={_option->send_timeout, 0};
-    struct timeval read_timeout={_option->read_timeout, 0};
-    int ret=setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(const char*)&send_timeout,sizeof(read_timeout));
-    ret=setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(const char*)&read_timeout,sizeof(read_timeout));
+//    struct timeval send_timeout={_option->send_timeout, 0};
+//    struct timeval read_timeout={_option->read_timeout, 0};
+//    int ret=setsockopt(sockfd,SOL_SOCKET,SO_SNDTIMEO,(const char*)&send_timeout,sizeof(read_timeout));
+//    ret=setsockopt(sockfd,SOL_SOCKET,SO_RCVTIMEO,(const char*)&read_timeout,sizeof(read_timeout));
 
     send(sockfd, msg->get_read_point(), msg->get_byte_count(), 0);
     // TODO:process errno, again or finalize if failed

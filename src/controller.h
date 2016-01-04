@@ -21,6 +21,7 @@ extern "C" {
 #include "service_set.h"
 #include "server.h"
 #include "protocol.h"
+#include "info_log_context.h"
 
 namespace nrpc
 {

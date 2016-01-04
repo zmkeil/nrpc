@@ -16,6 +16,7 @@ public:
 		std::cout << "in Echo method" << std::endl;
         std::cout << "request msg: " << request->msg() << std::endl;
         LOG(NGX_LOG_LEVEL_NOTICE, "in Echo method");
+        response->set_res(request->msg());
 		return done->Run();
 	}
 };

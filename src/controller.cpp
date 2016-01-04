@@ -38,7 +38,7 @@ bool Controller::init()
 
 void Controller::finalize()
 {
-    // log
+    //LOG(NGX_LOG_LEVEL_ALERT, "%s", _result_text);
     return;
 }
 
