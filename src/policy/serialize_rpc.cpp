@@ -198,9 +198,21 @@ void default_process_request(Controller* cntl)
 // for client end
 void default_process_response(Controller* cntl)
 {
-    (void) cntl;
+    google::protobuf::Message* resp = cntl->response();
     ngxplus::IOBuf* resp_buf = cntl->iobuf();
-    (void) resp_buf;
+    const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx()));
+    int body_size = pctx->body_size;
+
+    resp_buf->cutn(body_size);
+    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(resp_buf);
+    if (!resp->ParseFromZeroCopyStream(&zero_in_stream)) {
+        cntl->set_result(RPC_PROCESS_ERROR);
+        cntl->set_result_text("Failed to parse rpc response");
+        return cntl->finalize();
+    }
+    // release the remian payload
+    resp_buf->carrayon();
+    resp_buf->release_all();
 
     return;
 }

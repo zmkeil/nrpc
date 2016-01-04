@@ -17,5 +17,6 @@ test/test_ngx_start
 test/test_protocol
 test/test_serialize_parse
 test/test_service
+test/test_client
 test/client
 
