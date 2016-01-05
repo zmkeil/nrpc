@@ -17,16 +17,19 @@ extern "C" {
 #include <vector>
 #include <string>
 #include "service_set.h"
+#include "service_context.h"
 
 namespace nrpc {
 
 struct ServerOption {
     ServerOption() :
             read_timeout(3/*s*/),
-            max_concurrency(8) {}
+            max_concurrency(8),
+            service_context_factory(nullptr) {}
 
     int read_timeout;
     int max_concurrency;
+    ServiceContextFactory* service_context_factory;
 };
 
 class Server {
@@ -49,6 +52,7 @@ public:
 
 
     // get options
+    ServiceContext* local_service_context();
     int read_timeout();
 
 private:

@@ -8,12 +8,24 @@
   
  **********************************************/
 
+#include "timer.h"
 #include "controller.h"
+#include "service_context_log.h"
 
 namespace nrpc
 {
 
-Controller::Controller()
+Controller::Controller() :
+    _result_text(nullptr),
+    _protocol(nullptr),
+    _protocol_ctx(nullptr),
+    _request(nullptr),
+    _response(nullptr),
+    _iobuf(nullptr),
+    _service_set(nullptr),
+    _server(nullptr),
+    _service_context(nullptr),
+    _ngx_connection(nullptr)
 {
 }
 
@@ -21,11 +33,16 @@ Controller::~Controller()
 {
 }
 
+/***************************************
+ * for server side
+ *    about service and server option
+ **************************************/
 bool Controller::server_side_init(ngx_connection_t* c)
 {
     _ngx_connection = c;
     _service_set = (ServiceSet*)_ngx_connection->listening->servers;
     _server = _service_set->server();
+    _service_context = _server->local_service_context();
     // in server side, start the session with READING_REQUEST
     _state = RPC_SESSION_READING_REQUEST;
     // cmp c->local_sockaddr with service_set.address
@@ -38,31 +55,22 @@ bool Controller::server_side_init(ngx_connection_t* c)
     return true;
 }
 
-void Controller::finalize()
+// for server options
+ServiceContext* Controller::service_context()
 {
-    //LOG(NGX_LOG_LEVEL_ALERT, "%s", _result_text);
-    return;
+    return _server->local_service_context();
 }
 
-// set
-bool Controller::set_state(RPC_SESSION_STATE state)
+int Controller::server_read_timeout()
 {
-    _state = state;
-    return true;
+    return _server->read_timeout();
 }
 
-bool Controller::set_result(RPC_RESULT result)
-{
-    _result = result;
-    return true;
-}
 
-bool Controller::set_result_text(const char* result_text)
-{
-    _result_text = result_text;
-    return true;
-}
-
+/***************************************
+ * for both side
+ *    about protocol and procedure
+ **************************************/
 bool Controller::set_protocol(unsigned protocol_num)
 {
     if ((protocol_num >= sizeof(g_rpc_protocols)/sizeof(g_rpc_protocols[0])) ||
@@ -83,56 +91,29 @@ bool Controller::set_protocol(unsigned protocol_num)
     return true;
 }
 
-bool Controller::set_iobuf(ngxplus::IOBuf* iobuf)
+void Controller::finalize()
 {
-    _iobuf = iobuf;
-    return true;
-}
 
-// get
-ngxplus::IOBuf* Controller::iobuf()
-{
-    return _iobuf;
-}
+    // server side
+    // close connection, clear timer and event
+    // finalize_server_connection(_ngx_connection);
 
-Protocol* Controller::protocol()
-{
-    return _protocol;
-}
+    // free iobuf
+    delete _iobuf;
 
-void* Controller::protocol_ctx()
-{
-    return _protocol_ctx;
-}
+    // log
+    ServiceContextLog* access_log = ServiceContextLog::get_context();
+    access_log->clear();
+    access_log->set_start_time(10);
+    access_log->set_rt(5);
+    access_log->set_ret_code(_result);
+    access_log->set_ret_text(_state, _result_text);
+    // the _service_context alloc in init(), some field will be null if errors occurs
+    if (_service_context) {
+        access_log->push_service_context(_service_context);
+    }
 
-RPC_SESSION_STATE Controller::state()
-{
-    return _state;
-}
-
-ServiceSet* Controller::service_set()
-{
-    return _service_set;
-}
-
-ngx_connection_t* Controller::connection()
-{
-    return _ngx_connection;
-}
-
-
-// for server options
-int Controller::read_timeout()
-{
-    return _server->read_timeout();
-}
-
-
-// private
-bool Controller::set_service_set(ServiceSet* service_set)
-{
-    _service_set = service_set;
-    return true;
+    return;
 }
 
 }

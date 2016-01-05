@@ -8,8 +8,8 @@
   
  **********************************************/
 
-#ifndef NRPC_RPC_SESSION_H
-#define NRPC_RPC_SESSION_H
+#ifndef NRPC_CONTROLLER_H
+#define NRPC_CONTROLLER_H
 
 extern "C" {
 #include <nginx.h>
@@ -21,6 +21,7 @@ extern "C" {
 #include "service_set.h"
 #include "server.h"
 #include "protocol.h"
+#include "service_context.h"
 #include "info_log_context.h"
 
 namespace nrpc
@@ -93,6 +94,7 @@ public:
     // Server-side methods ---------------------------------------------
     // These calls may be made from the server side only.  Their results
     // are undefined on the client side (may crash).
+    // Server-side methods ---------------------------------------------
 
     // Causes Failed() to return true on the client side.  "reason" will be
     // incorporated into the message returned by ErrorText().  If you find
@@ -124,61 +126,97 @@ public:
         return;
     }
 
+    // server side init, get _server, _service_set from c
+    bool server_side_init(ngx_connection_t* c);
+
+    // service_set and ngx_connection
+    bool set_service_set(ServiceSet* service_set) {
+        _service_set = service_set;
+        return true;
+    }
+    ServiceSet* service_set() {
+        return _service_set;
+    }
+    ngx_connection_t* connection() {
+        return _ngx_connection;
+    }
+
+    // for server options
+    ServiceContext* service_context();
+    int server_read_timeout();
+
     // -------------------------------------------------------------------
     //                      Both-side methods.
     // Following methods can be called from both client and server. But they
     // may have different or opposite semantics.
     // -------------------------------------------------------------------
+    // session state and result
+    bool set_state(RPC_SESSION_STATE state) {
+        _state = state;
+        return true;
+    }
+    bool set_result(RPC_RESULT result) {
+        _result = result;
+        return true;
+    }
+    bool set_result_text(const char* result_text) {
+        _result_text = result_text;
+        return true;
+    }
+    RPC_SESSION_STATE state() {
+        return _state;
+    }
 
-    // Client-side: client-side remote_side() is surprisingly tricky. 
-    // Before each retry, it is the server that request will be sent to 
-    // and protocols can fetch this information in PackXXXRequest functions. 
-    // When RPC succeeds, it is the server which successfully responded. If
-    // the RPC failed, it's the last server tried.
-    // Server-side: returns the client sending the request
-    int/*base::EndPoint*/ remote_side() const { return _remote_side; }
-
-    // Client-side: client-side local_side() is undefined until this RPC
-    // succeeds
-    // Server-side: returns the address that client sends to
-    int/*base::EndPoint*/ local_side() const { return _local_side; }
-
-
-
-    bool server_side_init(ngx_connection_t* c);
-
-    void finalize();
-
-    // set
-    bool set_state(RPC_SESSION_STATE state);
-    bool set_result(RPC_RESULT result);
-    bool set_result_text(const char* result_text);
+    // protocol
     bool set_protocol(unsigned protocol_num);
-    bool set_iobuf(ngxplus::IOBuf* iobuf);
 
-    // get
-    ngxplus::IOBuf* iobuf();
-    Protocol* protocol();
-    void* protocol_ctx();
-    RPC_SESSION_STATE state();
-    ServiceSet* service_set();
-    ngx_connection_t* connection();
+    Protocol* protocol() {
+        return _protocol;
+    }
+    void* protocol_ctx() {
+        return _protocol_ctx;
+    }
+ 
+    // rpc data
+    void set_request(google::protobuf::Message* request) {
+        _request = request;
+    }
+    google::protobuf::Message* request() {
+        return _request;
+    }
+    void set_response(google::protobuf::Message* response) {
+        _response = response;
+    }
+    google::protobuf::Message* response() {
+        return _response;
+    }
 
-    // for server options
-    int read_timeout();
 
-    // add from cntl
-    void set_process_start_time(long start_process_us) {_start_process_us = start_process_us;}
-    long process_start_time() {return _start_process_us;}
+    // iobuf of the rpc procedure
+    bool set_iobuf(ngxplus::IOBuf* iobuf) {
+        _iobuf = iobuf;
+        return true;
+    }
+    ngxplus::IOBuf* iobuf() {
+        return _iobuf;
+    }
 
-    void set_request(google::protobuf::Message* request) {_request = request;}
-    google::protobuf::Message* request() {return _request;}
-    void set_response(google::protobuf::Message* response) {_response = response;}
-    google::protobuf::Message* response() {return _response;}
+    // stastics
+    int/*base::EndPoint*/ remote_side() const {
+        return _remote_side;
+    }
+    int/*base::EndPoint*/ local_side() const {
+        return _local_side;
+    }
+    void set_process_start_time(long start_process_us) {
+        _start_process_us = start_process_us;
+    }
+    long process_start_time() {
+        return _start_process_us;
+    }
 
-
-private:
-    bool set_service_set(ServiceSet* service_set);
+    // finalize
+    void finalize();
 
 private:
     // rpc_frame describes for both of server and client side;
@@ -217,6 +255,7 @@ private:
     // server and service informations for server side
     ServiceSet* _service_set;
     Server* _server;
+    ServiceContext* _service_context;
     ngx_connection_t* _ngx_connection;
 };
 

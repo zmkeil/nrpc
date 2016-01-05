@@ -68,6 +68,14 @@ int Server::start(ServerOption* option)
 
 
 // get options
+ServiceContext* Server::local_service_context()
+{
+    if (!_option->service_context_factory) {
+        return nullptr;
+    }
+    return _option->service_context_factory->create_context();
+}
+
 int Server::read_timeout()
 {
     return _option->read_timeout;

@@ -43,6 +43,7 @@ objs=ngx_nrpc_module.o \
      channel.o \
 	 server.o \
 	 service_set.o \
+     service_context_log.o \
 	 policy/proto/nrpc_meta.pb.o \
 	 policy/protocol.o \
 	 policy/serialize_rpc.o \

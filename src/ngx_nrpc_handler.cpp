@@ -33,7 +33,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     int n = c->recv(c, (u_char*)&first_character, 1);
     if(n == NGX_AGAIN) {
         if (!rev->timer_set) {
-            ngx_add_timer(rev, cntl->read_timeout());
+            ngx_add_timer(rev, cntl->server_read_timeout());
         }
         if (ngx_handle_read_event(rev, 0) != NGX_OK) {
             cntl->set_result(RPC_INNER_ERROR);
@@ -144,7 +144,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
             return protocol->process_request(cntl);
         }
         else if (presult == PARSE_INCOMPLETE) {
-            ngx_add_timer(rev, cntl->read_timeout());
+            ngx_add_timer(rev, cntl->server_read_timeout());
             if (ngx_handle_read_event(rev, 0) != NGX_OK) {
                 cntl->set_result(RPC_INNER_ERROR);
                 cntl->set_result_text("hanlde read event error");
