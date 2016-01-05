@@ -1,0 +1,26 @@
+package nrpc;
+
+message Student
+{
+    required string id = 1;
+    required string name = 2;
+    required string gender = 3;
+    required int32  age = 4;
+    required string object = 5;
+    required string home_address = 6;
+    required string phone = 7;
+}
+
+message EchoRequest {
+	required string msg = 1;
+}
+
+message EchoResponse {
+	required string res = 1;
+}
+
+service EchoService {
+	rpc Echo(EchoRequest) returns (EchoResponse);
+}
+
+option cc_generic_services = true; // ensure generate service code
