@@ -21,7 +21,7 @@ public:
 
 public:
     void set_start_time(time_t rawtime);
-    void set_rt(int rt_ms);
+    void set_rt(int rt_us);
     void set_ret_code(RPC_RESULT result);
     void set_ret_text(RPC_SESSION_STATE state, const char* result_text);
 

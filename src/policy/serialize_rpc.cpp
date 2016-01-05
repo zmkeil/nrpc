@@ -146,7 +146,6 @@ int default_pack_request(
 void default_process_request(Controller* cntl)
 {
     ngxplus::IOBuf* req_buf = cntl->iobuf();
-    long start_process_us = ngxplus::Timer::rawtime()/*s*/;
     const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx()));
     const RpcRequestMeta& req_meta = pctx->rpc_meta->request();
 
@@ -182,7 +181,6 @@ void default_process_request(Controller* cntl)
     req_buf->carrayon();
     req_buf->release_all();
 
-    cntl->set_process_start_time(start_process_us);
     // client.options --> req_meta -->server.cntl
     cntl->set_request(req.get());
     cntl->set_response(resp.get());
@@ -232,6 +230,7 @@ void default_send_rpc_response(Controller* cntl)
         cntl->finalize();
     }
 
+    cntl->set_end_process_time_us(ngxplus::Timer::rawtime_us());
     // really send response data to client
     cntl->set_state(RPC_SESSION_SENDING_RESPONSE);
     ngx_connection_t* c = cntl->connection();

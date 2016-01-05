@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.h
   Create date	: 2015-12-02 23:47
-  Modified date : 2016-01-05 00:57
+  Modified date : 2016-01-05 23:55
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -208,11 +208,35 @@ public:
     int/*base::EndPoint*/ local_side() const {
         return _local_side;
     }
-    void set_process_start_time(long start_process_us) {
-        _start_process_us = start_process_us;
+    void set_start_time_s(long start_time_s) {
+        _start_time_s = start_time_s;
     }
-    long process_start_time() {
-        return _start_process_us;
+    long start_time_s() {
+        return _start_time_s;
+    }
+    void set_start_time_us(long start_time_us) {
+        _start_time_us = start_time_us;
+    }
+    long start_time_us() {
+        return _start_time_us;
+    }
+    void set_start_process_time_us(long start_process_time_us) {
+        _start_process_time_us = start_process_time_us;
+    }
+    long start_process_time_us() {
+        return _start_process_time_us;
+    }
+    void set_end_process_time_us(long end_process_time_us) {
+        _end_process_time_us = end_process_time_us;
+    }
+    long end_process_time_us() {
+        return _end_process_time_us;
+    }
+    void set_end_time_us(long end_time_us) {
+        _end_time_us = end_time_us;
+    }
+    long end_time_us() {
+        return _end_time_us;
     }
 
     // finalize
@@ -247,7 +271,11 @@ private:
     ngxplus::IOBuf* _iobuf;
 
     // stastics for both of server and client side
-    long _start_process_us;
+    long _start_time_s;
+    long _start_time_us;
+    long _start_process_time_us;
+    long _end_process_time_us;
+    long _end_time_us;
     int _remote_side;
     int _local_side;
 

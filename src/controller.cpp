@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-05 00:50
+  Modified date : 2016-01-06 00:24
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -39,6 +39,8 @@ Controller::~Controller()
  **************************************/
 bool Controller::server_side_init(ngx_connection_t* c)
 {
+    _start_time_s = ngxplus::Timer::rawtime();
+    _start_time_us = ngxplus::Timer::rawtime_us();
     _ngx_connection = c;
     _service_set = (ServiceSet*)_ngx_connection->listening->servers;
     _server = _service_set->server();
@@ -104,14 +106,15 @@ void Controller::finalize()
     // log
     ServiceContextLog* access_log = ServiceContextLog::get_context();
     access_log->clear();
-    access_log->set_start_time(10);
-    access_log->set_rt(5);
+    access_log->set_start_time(_start_time_s);
+    access_log->set_rt(_end_time_us - _start_time_us);
     access_log->set_ret_code(_result);
     access_log->set_ret_text(_state, _result_text);
     // the _service_context alloc in init(), some field will be null if errors occurs
     if (_service_context) {
         access_log->push_service_context(_service_context);
     }
+    access_log->flush();
 
     return;
 }

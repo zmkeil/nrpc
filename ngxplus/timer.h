@@ -2,7 +2,7 @@
 /***********************************************
   File name		: timer.h
   Create date	: 2015-12-24 00:53
-  Modified date : 2015-12-24 01:38
+  Modified date : 2016-01-05 23:00
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -45,6 +45,24 @@ public:
         result = ::asctime(timeinfo);
         result[strlen(result)-1] = '\0';
         return result;
+    }
+
+    // we can use ngx_cached_time or gettimeofday, gettimeofday is
+    // more accurate but more costed
+    // ngx_cached_time must be used after ngx_core_start
+    static long rawtime_us(bool use_cache) {
+        if (use_cache) {
+            return ngx_cached_time->sec * 1000 * 1000 +
+                ngx_cached_time->msec * 1000 +
+                ngx_cached_time->usec;
+        }
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        return (tv.tv_sec - 1418118000) * 1000 * 1000 +
+                tv.tv_usec;
+    }
+    static long rawtime_us() {
+        return rawtime_us(false);
     }
 
 private:

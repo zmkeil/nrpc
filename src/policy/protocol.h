@@ -95,7 +95,7 @@ void default_send_rpc_response(Controller* cntl);
 struct HttpProtocolCtx : public ProtocolCtx {
     int version;
 };
-void http_send_rpc_response(Controller* cntl, long start_process_us);
+void http_send_rpc_response(Controller* cntl);
 
 }
 #endif
