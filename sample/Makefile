@@ -55,13 +55,11 @@ LDFLAGS=-lnrpc -lngxplus -lngx -lcommon -lprotobuf -lpthread -lssl -lcrypto -ldl
 PROTO=echo
 
 objs=echo.pb.o \
-	 test_ngx_start.o \
-	 test_client.o \
+	 server.o \
 	 client.o
 
-testbin=test_ngx_start \
-        test_client \
-		client
+testbin=server \
+        client
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -99,13 +97,9 @@ pb_c:
 	done
 
 # UT
-test_ngx_start:test_ngx_start.o echo.pb.o
+server:server.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_ngx_start $(LDFLAGS)
-
-test_client:test_client.o echo.pb.o
-	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o test_client $(LDFLAGS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server $(LDFLAGS)
 
 client:client.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"

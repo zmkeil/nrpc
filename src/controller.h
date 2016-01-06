@@ -60,21 +60,21 @@ public:
     Controller();
     virtual ~Controller();
 
-    // Client-side methods ---------------------------------------------
+    // -------------------------------------------------------------------
+    //                      Client-side methods
     // These calls may be made from the client side only.  Their results
     // are undefined on the server side (may crash).
+    // -------------------------------------------------------------------
 
-    // Resets the RpcController to its initial state so that it may be reused in
-    // a new call.  Must not be called while an RPC is in progress.
-    virtual void Reset() {return;}
+    // TODO: reuse controller
+    virtual void Reset() {
+        return;
+    }
 
-    // After a call has finished, returns true if the call failed.  The possible
-    // reasons for failure depend on the RPC implementation.  Failed() must not
-    // be called before a call has finished.  If Failed() returns true, the
-    // contents of the response message are undefined.
-    virtual bool Failed() const {return true;}
+    virtual bool Failed() const {
+        return _is_failed;
+    }
 
-    // If Failed() is true, returns a human-readable description of the error.
     virtual std::string ErrorText() const {
         // before (and in) protocol->process_response (in other words, in rpc frame),
         // return the _result_text; otherwise, the rpc procedure is successly completed,
@@ -83,24 +83,18 @@ public:
         return std::string("OK");
     }
 
-    // Advises the RPC system that the caller desires that the RPC call be
-    // canceled.  The RPC system may cancel it immediately, may wait awhile and
-    // then cancel it, or may not even cancel the call at all.  If the call is
-    // canceled, the "done" callback will still be called and the RpcController
-    // will indicate that the call failed at that time.
-    virtual void StartCancel() {return;}
+    // TODO: in asyn mode, start a rpc-call, an then cancel it before the response back
+    virtual void StartCancel() {
+        return;
+    }
 
 
-    // Server-side methods ---------------------------------------------
+    // -------------------------------------------------------------------
+    //                      Server-side methods
     // These calls may be made from the server side only.  Their results
     // are undefined on the client side (may crash).
-    // Server-side methods ---------------------------------------------
+    // -------------------------------------------------------------------
 
-    // Causes Failed() to return true on the client side.  "reason" will be
-    // incorporated into the message returned by ErrorText().  If you find
-    // you need to return machine-readable information about failures, you
-    // should incorporate it into your response protocol buffer and should
-    // NOT call SetFailed().
     // In user_defined service->method, use this api to set the reson into rpc_meta's
     // error_code and error_text; in rpc frame, we usually close the connection when error
     // TODO: server set reason into rpc_meta->response
@@ -109,18 +103,12 @@ public:
         return;
     }
 
-    // If true, indicates that the client canceled the RPC, so the server may
-    // as well give up on replying to it.  The server should still call the
-    // final "done" callback.
-    virtual bool IsCanceled() const {return true;}
+    // TODO: can't implement
+    virtual bool IsCanceled() const {
+        return true;
+    }
 
-    // Asks that the given callback be called when the RPC is canceled.  The
-    // callback will always be called exactly once.  If the RPC completes without
-    // being canceled, the callback will be called after completion.  If the RPC
-    // has already been canceled when NotifyOnCancel() is called, the callback
-    // will be called immediately.
-    //
-    // NotifyOnCancel() must be called no more than once per request.
+    // TODO: can't implement
     virtual void NotifyOnCancel(google::protobuf::Closure* callback) {
         (void) callback;
         return;
@@ -278,6 +266,8 @@ private:
     long _end_time_us;
     int _remote_side;
     int _local_side;
+    // use _result 
+    bool _is_failed;
 
 
     // server and service informations for server side

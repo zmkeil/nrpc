@@ -10,17 +10,26 @@ int main()
     if (!channel.init("192.168.2.188", 8899, &option)) {
         return -1;
     }
-
-    nrpc::Controller cntl;
-
-    nrpc::EchoRequest req;
-    req.set_msg("hello client");
-    nrpc::EchoResponse resp;
     nrpc::EchoService_Stub stub(&channel);
+
+    // the three element of RPC
+    nrpc::Controller cntl;
+    nrpc::EchoRequest req;
+    nrpc::EchoResponse resp;
+    req.set_msg("hello client");
+
     // this will call _channel.CallMethod(methoddes, cntl, req, resp, NULL)
+    //   1.pack request
+    //   2.send request buf
+    //   3.recv response
+    //   4.parse response
     stub.Echo(&cntl, &req, &resp, NULL);
 
     // do something with resp
+    if (cntl.Failed()) {
+        LOG(ALERT, "rpc failed: %s", cntl.ErrorText().c_str());
+        return -1;
+    }
     std::cout << resp.res() << std::endl;
 
     return 0;
