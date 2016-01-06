@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-06 00:24
+  Modified date : 2016-01-07 01:03
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -11,11 +11,13 @@
 #include "timer.h"
 #include "controller.h"
 #include "service_context_log.h"
+#include "proto/nrpc_meta.pb.h"
 
 namespace nrpc
 {
 
 Controller::Controller() :
+    _result(RPC_OK),
     _result_text(nullptr),
     _protocol(nullptr),
     _protocol_ctx(nullptr),
@@ -34,6 +36,51 @@ Controller::~Controller()
 }
 
 /***************************************
+ * for client side
+ *    about _state and ErrorText
+ **************************************/
+bool Controller::Failed() const
+{
+    // 1.the _state is inited to be RPC_OK, so this call returns false before
+    // rpc_over in async thread as long as no error occurs
+    // 2.RPC_OK means rpc frame success, then check resp_meta->error_code
+    if (_result == RPC_OK) {
+        RpcMeta* rpc_meta = ((DefaultProtocolCtx*)_protocol_ctx)->rpc_meta;
+        if (rpc_meta->has_response() &&
+                rpc_meta->response().has_error_code() &&
+                (rpc_meta->response().error_code() != RPC_SERVICE_OK)) {
+            return true;
+        }
+        return false;
+    }
+    return true;
+}
+
+std::string Controller::ErrorText() const
+{
+    // before (and in) protocol->process_response (in other words, in rpc frame),
+    // return the _result_text; otherwise, the rpc procedure is successly completed,
+    // than get error_code and error_text from rpc_meta->response
+    if (_result != RPC_OK) {
+        return std::string(_result_text);
+    }
+
+    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)_protocol_ctx)->rpc_meta;
+    if (rpc_meta->has_response()) {
+        const RpcResponseMeta& resp_meta = rpc_meta->response();
+        if (resp_meta.has_error_text()) {
+            return resp_meta.error_text();
+        }
+        if (resp_meta.has_error_code() &&
+                (resp_meta.error_code() != RPC_SERVICE_OK)) {
+            return std::string("Unkown rpc service error");
+        }
+    }
+    return std::string("OK");
+}
+
+
+/***************************************
  * for server side
  *    about service and server option
  **************************************/
@@ -45,8 +92,8 @@ bool Controller::server_side_init(ngx_connection_t* c)
     _service_set = (ServiceSet*)_ngx_connection->listening->servers;
     _server = _service_set->server();
     _service_context = _server->local_service_context();
-    // in server side, start the session with READING_REQUEST
-    _state = RPC_SESSION_READING_REQUEST;
+    // in server side, start the session with READING REQUEST
+    _state = RPC_SESSION_READING;
     // cmp c->local_sockaddr with service_set.address
 /*     if (not equal) {
  *         rpc_session->set_result(RPC_INNER_ERROR);
@@ -55,6 +102,14 @@ bool Controller::server_side_init(ngx_connection_t* c)
  *     }
  */
     return true;
+}
+
+void Controller::SetFailed(const std::string& reason) {
+    RpcMeta* rpc_meta = ((DefaultProtocolCtx*)_protocol_ctx)->rpc_meta;
+    RpcResponseMeta* resp_meta = rpc_meta->mutable_response();
+    resp_meta->set_error_code(RPC_SERVICE_FAILED);
+    resp_meta->set_error_text(reason);
+    return;
 }
 
 // for server options

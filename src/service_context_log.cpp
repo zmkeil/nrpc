@@ -1,4 +1,4 @@
-#include <string_printf.h>
+#include <common.h>
 #include "service_context_log.h"
 
 namespace nrpc {
@@ -71,16 +71,17 @@ void ServiceContextLog::set_ret_text(RPC_SESSION_STATE state, const char* result
     } else {
         std::string text;
         switch (state) {
-            case RPC_SESSION_READING_REQUEST:
-                text = "Unkown read request failed";
+            case RPC_SESSION_READING:
+                text = "Unkown read failed";
                 break;
             case RPC_SESSION_PROCESSING:
                 text = "Unkown process failed";
                 break;
-            case RPC_SESSION_SENDING_RESPONSE:
-                text = "Unkown send response failed";
+            case RPC_SESSION_SENDING:
+                text = "Unkown send failed";
                 break;
             case RPC_SESSION_LOGING:
+            case RPC_SESSION_OVER:
                 text = "ok";
                 break;
             default:

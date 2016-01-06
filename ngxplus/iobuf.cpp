@@ -1,5 +1,4 @@
-
-#include <string_printf.h>
+#include <common.h>
 #include "iobuf.h"
 #include "log.h"
 #include "info_log_context.h"
@@ -111,7 +110,7 @@ void IOBuf::reclaim(int count)
 int IOBuf::read(const char** data)
 {
     if ((!_read_pool) || (_bytes == 0)) {
-        LOG(NGX_LOG_LEVEL_INFO, "no more data in zero_copy_input_stream");
+        LOG(NGX_LOG_LEVEL_DEBUG, "no more data in zero_copy_input_stream");
         return -1;
     }
 
@@ -127,7 +126,7 @@ int IOBuf::read(const char** data)
 
     _read_pool = _read_pool->d.next;
     if (!_read_pool) {
-        LOG(NGX_LOG_LEVEL_INFO, "no more data in zero_copy_input_stream");
+        LOG(NGX_LOG_LEVEL_DEBUG, "no more data in zero_copy_input_stream");
         return -1;
     }
     *data = _start_points[++_read_block];

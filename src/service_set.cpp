@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <algorithm>
 #include <typeinfo>
 #include <cxxabi.h>
 #include <google/protobuf/message.h>

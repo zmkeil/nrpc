@@ -199,17 +199,27 @@ void default_process_response(Controller* cntl)
     google::protobuf::Message* resp = cntl->response();
     ngxplus::IOBuf* resp_buf = cntl->iobuf();
     const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx()));
-    int body_size = pctx->body_size;
+    RpcMeta* rpc_meta = pctx->rpc_meta;
 
-    resp_buf->cutn(body_size);
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(resp_buf);
-    if (!resp->ParseFromZeroCopyStream(&zero_in_stream)) {
-        cntl->set_result(RPC_PROCESS_ERROR);
-        cntl->set_result_text("Failed to parse rpc response");
-        return cntl->finalize();
+    // parse response only if resp_meta->error_code != FAILED
+    if (!(rpc_meta->has_response() &&
+            rpc_meta->response().has_error_code() &&
+            (rpc_meta->response().error_code() != RPC_SERVICE_OK))) {
+        int body_size = pctx->body_size;
+        resp_buf->cutn(body_size);
+        ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(resp_buf);
+        if (!resp->ParseFromZeroCopyStream(&zero_in_stream)) {
+            cntl->set_result(RPC_PROCESS_ERROR);
+            cntl->set_result_text("Failed to parse rpc response");
+            return cntl->finalize();
+        }
+        resp_buf->carrayon();
     }
+
+    cntl->set_state(RPC_SESSION_LOGING);
+    // this means rpc frame success
+    cntl->set_result(RPC_OK);
     // release the remian payload
-    resp_buf->carrayon();
     resp_buf->release_all();
 
     return;
@@ -224,6 +234,7 @@ void default_send_rpc_response(Controller* cntl, bool real_send)
     ngxplus::IOBuf* iobuf = cntl->iobuf();
 
     // pack nrpc default packages
+    // here resp may be incomplete or error, no matter
     if (!default_nrpc_pack_handle(iobuf, *rpc_meta, *resp)) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("serialize response pack error");
@@ -231,7 +242,7 @@ void default_send_rpc_response(Controller* cntl, bool real_send)
     }
     // end of process
     cntl->set_end_process_time_us(ngxplus::Timer::rawtime_us());
-    cntl->set_state(RPC_SESSION_SENDING_RESPONSE);
+    cntl->set_state(RPC_SESSION_SENDING);
     // if (!real_send), return without finalize, just for test
 
     if (real_send) {

@@ -16,6 +16,7 @@ int main()
     nrpc::Controller cntl;
     nrpc::EchoRequest req;
     nrpc::EchoResponse resp;
+    nrpc::Student student;
     req.set_msg("hello client");
 
     // this will call _channel.CallMethod(methoddes, cntl, req, resp, NULL)
@@ -24,13 +25,19 @@ int main()
     //   3.recv response
     //   4.parse response
     stub.Echo(&cntl, &req, &resp, NULL);
-
     // do something with resp
     if (cntl.Failed()) {
         LOG(ALERT, "rpc failed: %s", cntl.ErrorText().c_str());
         return -1;
     }
     std::cout << resp.res() << std::endl;
+
+    stub.Reflect(&cntl, &req, &student, NULL);
+    // do something with resp
+    if (cntl.Failed()) {
+        LOG(ALERT, "rpc failed: %s", cntl.ErrorText().c_str());
+    }
+    std::cout << student.name() << std::endl;
 
     return 0;
 }

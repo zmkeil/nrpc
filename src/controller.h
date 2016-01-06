@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.h
   Create date	: 2015-12-02 23:47
-  Modified date : 2016-01-05 23:55
+  Modified date : 2016-01-07 00:40
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -28,13 +28,21 @@ namespace nrpc
 {
 
 enum RPC_SESSION_STATE {
-    RPC_SESSION_READING_REQUEST = 0,
+    RPC_SESSION_READING = 0,
     RPC_SESSION_PROCESSING,
-    RPC_SESSION_SENDING_RESPONSE,
+    RPC_SESSION_SENDING,
     RPC_SESSION_LOGING,
     RPC_SESSION_OVER
 };
+/* In client side, the order is:
+ *     RPC_SESSION_SENDING
+ *     RPC_SESSION_READING
+ *     RPC_SESSION_PROCESSING
+ *     RPC_SESSION_LOGING
+ *     RPC_SESSION_OVER
+ */
 
+// rpc frame result
 enum RPC_RESULT {
     // inner error, just close connection
     RPC_INNER_ERROR = 0,
@@ -66,21 +74,13 @@ public:
     // are undefined on the server side (may crash).
     // -------------------------------------------------------------------
 
+    bool Failed() const;
+
+    std::string ErrorText() const;
+
     // TODO: reuse controller
     virtual void Reset() {
         return;
-    }
-
-    virtual bool Failed() const {
-        return _is_failed;
-    }
-
-    virtual std::string ErrorText() const {
-        // before (and in) protocol->process_response (in other words, in rpc frame),
-        // return the _result_text; otherwise, the rpc procedure is successly completed,
-        // than get error_code and error_text from rpc_meta->response
-        // TODO: client two-level ErrorText
-        return std::string("OK");
     }
 
     // TODO: in asyn mode, start a rpc-call, an then cancel it before the response back
@@ -96,12 +96,8 @@ public:
     // -------------------------------------------------------------------
 
     // In user_defined service->method, use this api to set the reson into rpc_meta's
-    // error_code and error_text; in rpc frame, we usually close the connection when error
-    // TODO: server set reason into rpc_meta->response
-    virtual void SetFailed(const std::string& reason) {
-        (void) reason;
-        return;
-    }
+    // error_code and error_text
+    void SetFailed(const std::string& reason);
 
     // TODO: can't implement
     virtual bool IsCanceled() const {
@@ -266,8 +262,6 @@ private:
     long _end_time_us;
     int _remote_side;
     int _local_side;
-    // use _result 
-    bool _is_failed;
 
 
     // server and service informations for server side

@@ -20,7 +20,12 @@ message RpcRequestMeta {
     optional int64 parent_span_id = 6;
 }
 
+enum RPC_SERVICE_RESULT {
+    RPC_SERVICE_OK = 0;
+    RPC_SERVICE_FAILED = 1;
+}
+
 message RpcResponseMeta {
-    optional int32 error_code = 1;
+    optional RPC_SERVICE_RESULT error_code = 1;
     optional string error_text = 2;
 }

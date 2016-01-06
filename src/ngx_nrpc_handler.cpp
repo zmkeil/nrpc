@@ -98,7 +98,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
     }
 
     RPC_SESSION_STATE cntl_state = cntl->state();
-    if (cntl_state != RPC_SESSION_READING_REQUEST) {
+    if (cntl_state != RPC_SESSION_READING) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("should not come into read request");
         return cntl->finalize();
