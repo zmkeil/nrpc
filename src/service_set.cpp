@@ -1,6 +1,9 @@
 
-#include <sstream>
 #include <iostream>
+#include <typeinfo>
+#include <cxxabi.h>
+#include <google/protobuf/message.h>
+#include <string_printf.h>
 #include "info_log_context.h"
 #include "service_set.h"
 
@@ -39,7 +42,8 @@ bool ServiceSet::add_service(google::protobuf::Service* service)
 	    const google::protobuf::MethodDescriptor* md = sd->method(i);
 		const MethodProperty mp = {service, md};
         std::string full_name = sd->name() + "_" + md->name();
-		_method_map[full_name] = mp;
+		//_method_map[full_name] = mp;
+        _method_map.insert(std::make_pair(full_name, mp));
 	}
 
 	// add _service_map
@@ -74,17 +78,23 @@ const MethodProperty* ServiceSet::find_method_property_by_full_name(const std::s
 
 void ServiceSet::dump(std::string *message)
 {
-
-    message->append("dump ServiceSet \"");
-    //message->append(_service_address->address << "\", ");
-    message->append("methodmap size [");
-    //message->append(_method_map.size());
-    message->append("] :\n");
-    for (MethodMap::iterator it = _method_map.begin(); it != _method_map.end(); ++it) {
-        const MethodProperty* method_property = &(it->second);
-        message->append((method_property->method_descriptor)->full_name());
-        message->append("\n");
-    }
+    common::string_appendf(message, "dump ServiceSet in \"%s\"\nHas [%ld] services:\n",
+            (char*)_service_address->address, _service_map.size());
+    std::for_each(_service_map.begin(), _service_map.end(),
+        [&message] (std::pair<std::string, ServiceProperty>service_item) {
+            google::protobuf::Service* service = service_item.second.service;
+            const google::protobuf::ServiceDescriptor* sd = service->GetDescriptor();
+            common::string_appendf(message, "  %s with [%d] methods:\n", sd->name().c_str(), sd->method_count());
+            for (int i = 0; i < sd->method_count(); ++i) {
+                const google::protobuf::MethodDescriptor* md = sd->method(i);
+                const google::protobuf::Message& default_request_instance = service->GetRequestPrototype(md);
+                const google::protobuf::Message& default_response_instance = service->GetResponsePrototype(md);
+                common::string_appendf(message, "    %s (%s) returns (%s)\n", md->name().c_str(),
+                    abi::__cxa_demangle(typeid(default_request_instance).name(), NULL, NULL, NULL),
+                    abi::__cxa_demangle(typeid(default_response_instance).name(), NULL, NULL, NULL));
+            }
+        }
+    );
 }
 
 Server* ServiceSet::server()

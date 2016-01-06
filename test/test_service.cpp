@@ -20,16 +20,20 @@ class EchoServiceImpl : public nrpc::EchoService {
 public:
 	EchoServiceImpl() {};
 	virtual ~EchoServiceImpl() {};
-	virtual void Echo(google::protobuf::RpcController* cntl_base, 
+    void Echo(google::protobuf::RpcController* cntl_base, 
 			const nrpc::EchoRequest* request, 
 			nrpc::EchoResponse* response, 
 			google::protobuf::Closure* done) {
+        (void) cntl_base;
+        (void) request;
+        (void) response;
+        (void) done;
 		std::cout << "in Echo method" << std::endl;
 		return;
 	}
 };
 
-int main(int argc, char** argv)
+int main()
 {
 	EchoServiceImpl service;
 
@@ -46,6 +50,7 @@ int main(int argc, char** argv)
     cout << "CallMethod: ";
 	service.CallMethod(pmdes, NULL, NULL, NULL, NULL);
 
+
     cout << endl;
     cout << "TEST service_set ===============" << endl;
     nrpc::ServiceSet* service_set = new nrpc::ServiceSet();
@@ -55,6 +60,7 @@ int main(int argc, char** argv)
     }
 
     string dump_message;
+    dump_message.reserve(2048);
     service_set->dump(&dump_message);
     cout << dump_message << endl;
 	return 0;

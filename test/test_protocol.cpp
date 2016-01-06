@@ -21,8 +21,12 @@ public:
 			const nrpc::EchoRequest* request, 
 			nrpc::EchoResponse* response, 
 			google::protobuf::Closure* done) {
-		std::cout << "in Echo method" << std::endl;
+        (void) cntl_base;
+        // don't done->run(), call default_send_rpc_response(false) for mock test
+        (void) done;
+		std::cout << "in server Echo method----" << std::endl;
         std::cout << "request msg: " << request->msg() << std::endl;
+        response->set_res(request->msg() + " to client");
 		return;
 	}
 };
@@ -32,29 +36,55 @@ public:
 int main()
 {
     EchoServiceImpl service;
+    // a mock iobuf, through the entire procedure
+    ngxplus::IOBuf iobuf;
 
-    // pack request to iobuf
+    /******************************
+     * client side
+     *****************************/
+    // mock a request
     const google::protobuf::ServiceDescriptor* psdes = service.GetDescriptor();
 	const google::protobuf::MethodDescriptor *pmdes = psdes->method(0);
     nrpc::EchoRequest req;
     req.set_msg("hello");
-    ngxplus::IOBuf iobuf;
-    nrpc::g_rpc_protocols[PROTOCOL_NUM]->pack_request(&iobuf, pmdes, NULL, req);
+
+    // mock the channel's CallMethod
+    nrpc::Controller* client_cntl = new nrpc::Controller();
+    client_cntl->set_protocol(PROTOCOL_NUM);
+    client_cntl->set_iobuf(&iobuf);
+    nrpc::EchoResponse client_resp;
+    client_cntl->set_response(&client_resp);
+    // pack the request 
+    nrpc::g_rpc_protocols[PROTOCOL_NUM]->pack_request(&iobuf, pmdes, client_cntl, req);
 
 
-    // process request from iobuf
-    nrpc::Controller* mock_cntl = new nrpc::Controller();
-    mock_cntl->set_iobuf(&iobuf);
+    /******************************
+     * server side
+     *****************************/
+    nrpc::Controller* server_cntl = new nrpc::Controller();
+    // determin protocol
+    server_cntl->set_protocol(PROTOCOL_NUM);
+    server_cntl->set_iobuf(&iobuf);
     nrpc::ServiceSet* mock_service_set = new nrpc::ServiceSet();
     mock_service_set->add_service(&service);
-    mock_cntl->set_service_set(mock_service_set);
+    server_cntl->set_service_set(mock_service_set);
 
-    // mock determine protocol
-    mock_cntl->set_protocol(PROTOCOL_NUM);
-    nrpc::Protocol* protocol = mock_cntl->protocol();
+    // process request from iobuf
+    nrpc::Protocol* protocol = server_cntl->protocol();
+    protocol->parse(server_cntl, true);
+    protocol->process_request(server_cntl);
+    // just pack the response without real_send
+    nrpc::default_send_rpc_response(server_cntl, false);
 
-    protocol->parse(mock_cntl, true);
-    protocol->process_request(mock_cntl);
+    /******************************
+     * client side, process response
+     *****************************/
+    // recv data and parse
+    protocol->parse(client_cntl, true);
+    protocol->process_response(client_cntl);
+    // do something with client_resp
+    std::cout << "in client side----" << std::endl;
+    std::cout << "response res: " << client_resp.res() << std::endl;
 
     return 0;
 }

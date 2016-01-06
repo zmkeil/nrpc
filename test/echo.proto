@@ -21,6 +21,8 @@ message EchoResponse {
 
 service EchoService {
 	rpc Echo(EchoRequest) returns (EchoResponse);
+
+    rpc Get(Student) returns (EchoResponse);
 }
 
 option cc_generic_services = true; // ensure generate service code

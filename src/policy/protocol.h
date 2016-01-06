@@ -90,6 +90,7 @@ struct DefaultProtocolCtx : public ProtocolCtx {
 
     // for response
 };
+void default_send_rpc_response(Controller* cntl, bool real_send);
 void default_send_rpc_response(Controller* cntl);
 
 struct HttpProtocolCtx : public ProtocolCtx {

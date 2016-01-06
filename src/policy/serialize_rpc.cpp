@@ -215,7 +215,7 @@ void default_process_response(Controller* cntl)
     return;
 }
 
-void default_send_rpc_response(Controller* cntl)
+void default_send_rpc_response(Controller* cntl, bool real_send)
 {
     const google::protobuf::Message* resp = cntl->response();
     // the rpc_meta->response.error_code/text is setted in user_defined
@@ -229,13 +229,22 @@ void default_send_rpc_response(Controller* cntl)
         cntl->set_result_text("serialize response pack error");
         cntl->finalize();
     }
-
+    // end of process
     cntl->set_end_process_time_us(ngxplus::Timer::rawtime_us());
-    // really send response data to client
     cntl->set_state(RPC_SESSION_SENDING_RESPONSE);
-    ngx_connection_t* c = cntl->connection();
-    c->write->handler = ngx_nrpc_send_response;
-    return ngx_nrpc_send_response(c->write);
+    // if (!real_send), return without finalize, just for test
+
+    if (real_send) {
+        // really send response data to client
+        ngx_connection_t* c = cntl->connection();
+        c->write->handler = ngx_nrpc_send_response;
+        return ngx_nrpc_send_response(c->write);
+    }
+}
+
+void default_send_rpc_response(Controller* cntl)
+{
+    return default_send_rpc_response(cntl, true);
 }
 
 }
