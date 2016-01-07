@@ -1,0 +1,21 @@
+Simply use
+    ./ngxlib_install.sh
+It will ar the nginx_src to libngx.a, and then we can use it by -lngx
+
+before build, this shell-script will modify some files of nginx
+    objs/Makefile
+    objs/ngx_modules.c
+    src/core/nginx.c
+    src/core/nginx.h
+
+but we Can't guarantee that the convert will be success when nginx src chanaged
+you can refer to the samples in this directory
+    cnvt_nginx-reform.c
+    cnvt_nginx-reform.h
+    cnvt_Makefile-reform
+
+the main changes as follows:
+    1.function main() --> ngx_start()
+    2.use fake nrpc_argc/nrpc_argv instead of argc/argv
+    3.use default conf path "conf/nginx.conf"
+    4.add ngx_extern_modules[] and related add code, the nrpc can be seemed as a ngx_module

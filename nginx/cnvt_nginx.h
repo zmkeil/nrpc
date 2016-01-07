@@ -8,7 +8,6 @@
 #ifndef _NGINX_H_INCLUDED_
 #define _NGINX_H_INCLUDED_
 
-#include <ngx_core.h>
 
 #define nginx_version      1006002
 #define NGINX_VERSION      "1.6.2"
@@ -22,11 +21,10 @@
 #define NGINX_VAR          "NGINX"
 #define NGX_OLDPID_EXT     ".oldbin"
 
+#include <ngx_core.h>
 extern int NGX_PREINIT_FLAG;
-
-int ngx_pre_init();
-int ngx_start();
 extern ngx_module_t* ngx_extern_modules[];
 extern u_char* ngx_extern_module_names[];
+int ngx_start();
 
 #endif /* _NGINX_H_INCLUDED_ */

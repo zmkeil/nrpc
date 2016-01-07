@@ -49,11 +49,11 @@ int Server::start(ServerOption* option)
 {
     _option = option;
 
-    if (ngx_pre_init() != 0) {
-        std::cout << "ngx_pre_init failed" << std::endl;
-        return -1;
-    }
-
+/*     if (ngx_pre_init() != 0) {
+ *         std::cout << "ngx_pre_init failed" << std::endl;
+ *         return -1;
+ *     }
+ */
     // initialize input_handler, only one now. 
 	// TODO: support mutiple-policys, realize an adaptor
 //	InputMessageHandler handler;

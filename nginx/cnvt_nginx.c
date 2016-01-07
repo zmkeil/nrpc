@@ -10,7 +10,6 @@
 #include <nginx.h>
 
 
-static void ngx_add_extern_modules();
 static ngx_int_t ngx_add_inherited_sockets(ngx_cycle_t *cycle);
 static ngx_int_t ngx_get_options(int argc, char *const *argv);
 static ngx_int_t ngx_process_options(ngx_cycle_t *cycle);
@@ -184,13 +183,6 @@ ngx_module_t  ngx_core_module = {
     NGX_MODULE_V1_PADDING
 };
 
-ngx_module_t *ngx_extern_modules[10] = {
-    NULL
-};
-
-u_char *ngx_extern_module_names[10] = {
-    NULL
-};
 
 ngx_uint_t          ngx_max_module;
 ngx_uint_t          ngx_dump_config;
@@ -200,32 +192,34 @@ static ngx_uint_t   ngx_show_help;
 static ngx_uint_t   ngx_show_version;
 static ngx_uint_t   ngx_show_configure;
 static u_char      *ngx_prefix = (u_char*)"./";
-static u_char      *ngx_conf_file = (u_char*)"nginx.conf";
+static u_char      *ngx_conf_file = (u_char*)"conf/nginx.conf";
 static u_char      *ngx_conf_params;
 static char        *ngx_signal;
 
+
 static char **ngx_os_environ;
 
+
+ngx_module_t *ngx_extern_modules[10] = {
+    NULL
+};
+u_char *ngx_extern_module_names[10] = {
+    NULL
+};
+static int nrpc_argc;
 static char *nrpc_argv[1];
-static char *nrpc_bin_name = "undefine";
-
-static ngx_cycle_t     init_cycle;
-
 int NGX_PREINIT_FLAG = 0;
 
-int ngx_pre_init()
+int ngx_cdecl
+ngx_start()
 {
-    ngx_log_t* log;
-
-	ngx_log_stderr(0, "pre init: \n"
-			"\tdebug_init()\n"
-			"\tstrerror_init()\n"
-			"\tget_options(), set static\n"
-			"\ttime_init()\n"
-			"\tgetpid()\n"
-			"\tlog_init() with argv.ngx_prefix\n"
-			"\tmemzero init_cycle, and malloc its pool\n"
-			"\tprocess_options(), set the argv to init_cycle");
+    nrpc_argc = 1;
+    nrpc_argv[0] = (char*)calloc(1, 10);
+    memcpy(nrpc_argv[0], "nrpc", 4);
+    ngx_int_t         i;
+    ngx_log_t        *log;
+    ngx_cycle_t      *cycle, init_cycle;
+    ngx_core_conf_t  *ccf;
 
     ngx_debug_init();
 
@@ -233,14 +227,89 @@ int ngx_pre_init()
         return 1;
     }
 
-	ngx_time_init();
+    if (ngx_get_options(nrpc_argc, nrpc_argv) != NGX_OK) {
+        return 1;
+    }
+
+    if (ngx_show_version) {
+        ngx_write_stderr("Tengine version: " TENGINE_VER " (" NGINX_VER ")"
+                         NGX_LINEFEED);
+
+        if (ngx_show_help) {
+            ngx_write_stderr(
+                "Usage: nginx [-?hvmVtdq] [-s signal] [-c filename] "
+                             "[-p prefix] [-g directives]" NGX_LINEFEED
+                             NGX_LINEFEED
+                "Options:" NGX_LINEFEED
+                "  -?,-h         : this help" NGX_LINEFEED
+                "  -v            : show version and exit" NGX_LINEFEED
+                "  -m            : show all modules and exit" NGX_LINEFEED
+                "  -l            : show all directives and exit" NGX_LINEFEED
+                "  -V            : show version, modules and configure options "
+                                   "then exit" NGX_LINEFEED
+                "  -t            : test configuration and exit" NGX_LINEFEED
+                "  -d            : dump configuration and exit" NGX_LINEFEED
+                "  -q            : suppress non-error messages "
+                                   "during configuration testing" NGX_LINEFEED
+                "  -s signal     : send signal to a master process: "
+                                   "stop, quit, reopen, reload" NGX_LINEFEED
+#ifdef NGX_PREFIX
+                "  -p prefix     : set prefix path (default: "
+                                   NGX_PREFIX ")" NGX_LINEFEED
+#else
+                "  -p prefix     : set prefix path (default: NONE)" NGX_LINEFEED
+#endif
+                "  -c filename   : set configuration file (default: "
+                                   NGX_CONF_PATH ")" NGX_LINEFEED
+                "  -g directives : set global directives out of configuration "
+                                   "file" NGX_LINEFEED NGX_LINEFEED
+                );
+        }
+
+        if (ngx_show_configure) {
+            ngx_write_stderr(
+#ifdef NGX_COMPILER
+                "built by " NGX_COMPILER NGX_LINEFEED
+#endif
+#if (NGX_SSL)
+#ifdef SSL_CTRL_SET_TLSEXT_HOSTNAME
+                "TLS SNI support enabled" NGX_LINEFEED
+#else
+                "TLS SNI support disabled" NGX_LINEFEED
+#endif
+#endif
+                "configure arguments:" NGX_CONFIGURE NGX_LINEFEED);
+        }
+
+        if(!ngx_test_config && !ngx_show_modules && !ngx_show_directives) {
+            return 0;
+        }
+    }
+
+    /* TODO */ ngx_max_sockets = -1;
+
+    ngx_time_init();
+
+#if (NGX_PCRE)
+    ngx_regex_init();
+#endif
 
     ngx_pid = ngx_getpid();
 
     log = ngx_log_init(ngx_prefix);
     if (log == NULL) {
         return 1;
-	}
+    }
+
+    /* STUB */
+#if (NGX_OPENSSL)
+    ngx_ssl_init(log);
+#endif
+
+    /*
+     * init_cycle->log is required for signal handlers and
+     * ngx_process_options()
+     */
 
     ngx_memzero(&init_cycle, sizeof(ngx_cycle_t));
     init_cycle.log = log;
@@ -251,38 +320,23 @@ int ngx_pre_init()
         return 1;
     }
 
-    nrpc_argv[0] = ngx_alloc(sizeof(nrpc_bin_name), init_cycle.log);
-    (void) ngx_cpystrn((u_char *) nrpc_argv[0], (u_char *) nrpc_bin_name, sizeof(nrpc_bin_name));
-    if (ngx_save_argv(&init_cycle, 1, nrpc_argv) != NGX_OK) {
+    if (ngx_save_argv(&init_cycle, nrpc_argc, nrpc_argv) != NGX_OK) {
         return 1;
     }
 
     NGX_PREINIT_FLAG = 1;
-    return 0;
-}
-
-int
-ngx_start()
-{
-	ngx_int_t         i;
-    ngx_cycle_t      *cycle;
-    ngx_core_conf_t  *ccf;
-
-	ngx_log_stderr(0, "really init:\n"
-			"\tos_init(log)\n"
-			"\tcrc32_table_init()\n"
-			"\tadd_inherited_sockets(&init_cycle)\n"
-			"\tget ngx_max_module\n"
-			"\tinit_cycle(&init_cycle), CORE: parse config, init modules, \n"
-			"\t\tpaths, files, sh_memory, listening, connections_queue, open socket");
 
     if (ngx_process_options(&init_cycle) != NGX_OK) {
         return 1;
     }
 
-    if (ngx_os_init(ngx_cycle->log) != NGX_OK) {
+    if (ngx_os_init(log) != NGX_OK) {
         return 1;
     }
+
+    /*
+     * ngx_crc32_table_init() requires ngx_cacheline_size set in ngx_os_init()
+     */
 
     if (ngx_crc32_table_init() != NGX_OK) {
         return 1;
@@ -296,25 +350,44 @@ ngx_start()
     for (i = 0; ngx_modules[i]; i++) {
         ngx_modules[i]->index = ngx_max_module++;
     }
-	ngx_add_extern_modules();
+    for (i = 0; ngx_extern_modules[i]; i++) {
+        ngx_modules[ngx_max_module] = ngx_extern_modules[i];
+        ngx_module_names[ngx_max_module] = ngx_extern_module_names[i];
+        ngx_modules[ngx_max_module]->index = ngx_max_module;
+        ngx_max_module++;
+    }
 
     cycle = ngx_init_cycle(&init_cycle);
     if (cycle == NULL) {
-		return -1;
-	}
+        if (ngx_test_config) {
+            ngx_log_stderr(0, "configuration file %s test failed",
+                           init_cycle.conf_file.data);
+        }
 
-	ngx_log_stderr(0, "after init: \n"
-			"\tprint result if test_config, show_version, dump_config\n"
-			"\totherize: \n"
-			"\t\topen_pipes, log_rediect_sederr, create_master_pidfile if multi-process\n"
-			"\t\tthen work with ngx_single_process_cycle, master with ngx_master_process_cycle");
-	
-	// signal mode
+        return 1;
+    }
+
+    if (ngx_test_config) {
+        if (!ngx_quiet_mode) {
+            ngx_log_stderr(0, "configuration file %s test is successful",
+                           cycle->conf_file.data);
+        }
+
+        return 0;
+    }
+
+    if (ngx_show_modules || ngx_show_directives) {
+        return 0;
+    }
+
+    if (ngx_dump_config) {
+        return 0;
+    }
+
     if (ngx_signal) {
         return ngx_signal_process(cycle, ngx_signal);
     }
 
-	// multi-process mode
     ngx_os_status(cycle->log);
 
     ngx_cycle = cycle;
@@ -358,8 +431,8 @@ ngx_start()
         return 1;
     }
 
-    if (cycle->log->file->fd != ngx_stderr) {
-        if (ngx_close_file(cycle->log->file->fd) == NGX_FILE_ERROR) {
+    if (log->file->fd != ngx_stderr) {
+        if (ngx_close_file(log->file->fd) == NGX_FILE_ERROR) {
             ngx_log_error(NGX_LOG_ALERT, cycle->log, ngx_errno,
                           ngx_close_file_n " built-in log failed");
         }
@@ -377,16 +450,6 @@ ngx_start()
     return 0;
 }
 
-static void ngx_add_extern_modules()
-{
-    ngx_uint_t i;
-    for (i = 0; ngx_extern_modules[i]; i++) {
-        ngx_modules[ngx_max_module] = ngx_extern_modules[i];
-        ngx_module_names[ngx_max_module] = ngx_extern_module_names[i];
-        ngx_modules[ngx_max_module]->index = ngx_max_module++;
-    }
-    return;
-}
 
 static ngx_int_t
 ngx_add_inherited_sockets(ngx_cycle_t *cycle)
