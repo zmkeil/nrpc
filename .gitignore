@@ -20,5 +20,6 @@ test/test_service
 sample/server
 sample/client
 sample/test_client
+sample/server_service_context
 sample/logs/
 

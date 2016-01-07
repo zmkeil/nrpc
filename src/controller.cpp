@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-07 01:03
+  Modified date : 2016-01-07 23:34
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -152,9 +152,6 @@ void Controller::finalize()
 {
 
     // server side
-    // close connection, clear timer and event
-    // finalize_server_connection(_ngx_connection);
-
     // free iobuf
     delete _iobuf;
 
@@ -170,6 +167,9 @@ void Controller::finalize()
         access_log->push_service_context(_service_context);
     }
     access_log->flush();
+
+    // close connection, clear timer and event OR keepalive for reuse
+    // finalize_server_connection(_ngx_connection);
 
     return;
 }

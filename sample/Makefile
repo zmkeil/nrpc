@@ -56,9 +56,11 @@ PROTO=echo
 
 objs=echo.pb.o \
 	 server.o \
+	 server_service_context.o \
 	 client.o
 
 testbin=server \
+		server_service_context \
         client
 
 .PHONY:all
@@ -100,6 +102,10 @@ pb_c:
 server:server.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server $(LDFLAGS)
+
+server_service_context:server_service_context.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_service_context $(LDFLAGS)
 
 client:client.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
