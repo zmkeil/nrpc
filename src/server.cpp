@@ -81,4 +81,14 @@ int Server::read_timeout()
     return _option->read_timeout;
 }
 
+bool Server::is_connection_reuse()
+{
+    return _option->is_connection_reuse;
+}
+
+int Server::idle_timeout()
+{
+    return _option->idle_timeout;
+}
+
 }

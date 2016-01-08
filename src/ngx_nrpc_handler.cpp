@@ -4,6 +4,21 @@
 
 namespace nrpc {
 
+void ngx_nrpc_close_connection(ngx_connection_t* c)
+{
+    c->destroyed = 1;
+
+    if (c->read->timer_set) {
+        ngx_del_timer(c->read);
+    }
+    if (c->write->timer_set) {
+        ngx_del_timer(c->write);
+    }
+
+    ngx_close_connection(c);
+    return;
+}
+
 void ngx_nrpc_init_connection(ngx_connection_t *c)
 {
     auto cntl = new Controller();
@@ -166,12 +181,6 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
     }
 }
 
-void ngx_nrpc_dummy_read(ngx_event_t* rev)
-{
-    (void) rev;
-    return;
-}
-
 void ngx_nrpc_send_response(ngx_event_t* wev)
 {
     ngx_connection_t* c = (ngx_connection_t*)wev->data;
@@ -205,6 +214,18 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
     cntl->set_state(RPC_SESSION_LOGING);
     cntl->set_end_time_us(ngxplus::Timer::rawtime_us());
     return cntl->finalize();
+}
+
+void ngx_nrpc_dummy_read(ngx_event_t* rev)
+{
+    (void) rev;
+    return;
+}
+
+void ngx_nrpc_dummy_write(ngx_event_t* wev)
+{
+    (void) wev;
+    return;
 }
 
 }

@@ -20,6 +20,11 @@ void ngx_nrpc_dummy_read(ngx_event_t* rev);
 // response
 void ngx_nrpc_send_response(ngx_event_t* wev);
 
+void ngx_nrpc_dummy_write(ngx_event_t* wev);
+
+// finalize
+void ngx_nrpc_close_connection(ngx_connection_t* c);
+
 }
 #endif
 

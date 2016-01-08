@@ -12,6 +12,7 @@
 #include "controller.h"
 #include "service_context_log.h"
 #include "proto/nrpc_meta.pb.h"
+#include "ngx_nrpc_handler.h"
 
 namespace nrpc
 {
@@ -148,6 +149,22 @@ bool Controller::set_protocol(unsigned protocol_num)
     return true;
 }
 
+void Controller::finalize_server_connection(ngx_connection_t* c)
+{
+    if (!_server->is_connection_reuse()) {
+        return ngx_nrpc_close_connection(c);
+    }
+
+    // reuse
+    c->read->handler = ngx_nrpc_determine_policy;
+    c->write->handler = ngx_nrpc_dummy_write;
+    ngx_add_timer(c->read, _server->idle_timeout());
+    if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
+        LOG(ALERT, "reuse connection error");
+        return ngx_nrpc_close_connection(c);
+    }
+}
+
 void Controller::finalize()
 {
 
@@ -169,7 +186,7 @@ void Controller::finalize()
     access_log->flush();
 
     // close connection, clear timer and event OR keepalive for reuse
-    // finalize_server_connection(_ngx_connection);
+    finalize_server_connection(_ngx_connection);
 
     return;
 }

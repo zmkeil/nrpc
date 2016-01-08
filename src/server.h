@@ -24,11 +24,20 @@ namespace nrpc {
 struct ServerOption {
     ServerOption() :
             read_timeout(3/*s*/),
+            is_connection_reuse(false),
+            idle_timeout(3),
             max_concurrency(8),
             service_context_factory(nullptr) {}
 
+    // read request timeout
     int read_timeout;
+    // is connection reused?
+    bool is_connection_reuse;
+    // idle timeout before reused
+    int idle_timeout;
+    // max concurrency
     int max_concurrency;
+    // context factory, create context for pre-session
     ServiceContextFactory* service_context_factory;
 };
 
@@ -52,8 +61,10 @@ public:
 
 
     // get options
-    ServiceContext* local_service_context();
     int read_timeout();
+    bool is_connection_reuse();
+    int idle_timeout();
+    ServiceContext* local_service_context();
 
 private:
     ServerOption* _option;
