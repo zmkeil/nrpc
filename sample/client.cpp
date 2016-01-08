@@ -5,16 +5,20 @@
 
 #include "echo.pb.h"
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc != 2) {
+        printf("Usage: ./client <IP>\n");
+        return -1;
+    }
     // for test
     std::string error_log_file("client_error.log");
     ngxplus::InfoLogContext::set_log_file(error_log_file);
-    common::COMMON_TEST_FLAG = 1;
+    //common::COMMON_TEST_FLAG = 1;
 
     nrpc::Channel channel;
     nrpc::ChannelOption option;
-    if (!channel.init("127.0.0.1", 8899, &option)) {
+    if (!channel.init(argv[1], 8899, &option)) {
         return -1;
     }
     nrpc::EchoService_Stub stub(&channel);

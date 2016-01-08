@@ -9,9 +9,9 @@ namespace nrpc {
 
 struct ChannelOption
 {
-    ChannelOption() : connection_timeout(1),
-                    send_timeout(3),
-                    read_timeout(3),
+    ChannelOption() : connection_timeout(5),
+                    send_timeout(5),
+                    read_timeout(5),
                     max_retry_time(3) {}
     int connection_timeout;
     int send_timeout;

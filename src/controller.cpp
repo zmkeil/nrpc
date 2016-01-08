@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-07 23:34
+  Modified date : 2016-01-08 22:36
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -18,6 +18,7 @@ namespace nrpc
 {
 
 Controller::Controller() :
+    _is_server(false),
     _result(RPC_OK),
     _result_text(nullptr),
     _protocol(nullptr),
@@ -95,6 +96,8 @@ bool Controller::server_side_init(ngx_connection_t* c)
     _service_context = _server->local_service_context();
     // in server side, start the session with READING REQUEST
     _state = RPC_SESSION_READING;
+    // set _is_client false
+    _is_server = true;
     // cmp c->local_sockaddr with service_set.address
 /*     if (not equal) {
  *         rpc_session->set_result(RPC_INNER_ERROR);
@@ -165,13 +168,21 @@ void Controller::finalize_server_connection(ngx_connection_t* c)
     }
 }
 
+void Controller::finalize_client()
+{
+    return;
+}
+
 void Controller::finalize()
 {
-
-    // server side
     // free iobuf
     delete _iobuf;
 
+    if (!_is_server) {
+        return finalize_client();
+    }
+
+    // server side
     // log
     ServiceContextLog* access_log = ServiceContextLog::get_context();
     access_log->clear();

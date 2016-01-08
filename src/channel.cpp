@@ -71,7 +71,7 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
     if (!common::connect_with_timeout(sockfd, (struct sockaddr*)&_servaddr, _servaddr_len, _option->connection_timeout)) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("connect error");
-        cntl->finalize();
+        return cntl->finalize();
     }
 
     int size = common::send_with_timeout(sockfd, msg->get_read_point(), msg->get_byte_count(), _option->send_timeout);
@@ -79,7 +79,7 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
         // TODO:process errno, again or finalize if failed
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("send error");
-        cntl->finalize();
+        return cntl->finalize();
     }
 
     msg->release_all();

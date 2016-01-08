@@ -228,8 +228,12 @@ public:
 
 private:
     void finalize_server_connection(ngx_connection_t* c);
+    void finalize_client();
 
 private:
+    // _is_server
+    bool _is_server;
+
     // rpc_frame describes for both of server and client side;
     // the order of _state is different between server and client side;
     // the _result and _result_text describe the rpc_frame errors,

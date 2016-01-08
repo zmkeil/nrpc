@@ -25,14 +25,14 @@ public:
     // 2.for service context log
     void set_session_field(const std::string key)
     {
-        LOG(ALERT, "set_feild: %s", key.c_str());
+        //LOG(ALERT, "set_feild: %s", key.c_str());
         _svec.push_back(key);
         _svec.insert(_svec.begin(), key);
     }
 
     void build_log(std::string* log)
     {
-        LOG(ALERT, "_svec size: %ld", _svec.size());
+        //LOG(ALERT, "_svec size: %ld", _svec.size());
         std::for_each(_svec.begin(), _svec.end(),
             [&log, this] (std::string& key) {
                 (*log) += key;
