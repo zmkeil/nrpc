@@ -29,6 +29,10 @@ public:
         return info_log_context;
     }
 
+    static void set_log_file(std::string& file_name) {
+        INFO_LOG_NAME_DEFAULT = file_name;
+    }
+
 public:
     void log(int level, const char* fmt, ...) {
         va_list args;
@@ -49,7 +53,7 @@ private:
 
 private:
     const static int INFO_LOG_LEVEL_DEFAULT = NGX_LOG_LEVEL_INFO;
-    const static std::string INFO_LOG_NAME_DEFAULT;
+    static std::string INFO_LOG_NAME_DEFAULT;
 };
 
 }

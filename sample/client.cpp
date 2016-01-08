@@ -1,3 +1,5 @@
+#include <common.h>
+#include <info_log_context.h>
 #include "channel.h"
 #include "controller.h"
 
@@ -5,6 +7,11 @@
 
 int main()
 {
+    // for test
+    std::string error_log_file("client_error.log");
+    ngxplus::InfoLogContext::set_log_file(error_log_file);
+    common::COMMON_TEST_FLAG = 1;
+
     nrpc::Channel channel;
     nrpc::ChannelOption option;
     if (!channel.init("127.0.0.1", 8899, &option)) {
