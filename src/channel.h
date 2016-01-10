@@ -33,15 +33,36 @@ public:
                     google::protobuf::Message* response,
                     google::protobuf::Closure* done);
 
-private:
-    bool connect_with_timeout(int socket, struct sockaddr* addr, socklen_t addr_len, int timeout);
+    bool channel_join();
+
+    // Not implemented yet
+    // bool channel_cancel();
+
+public:
+    struct sockaddr* servaddr() {
+        return (struct sockaddr*)&_servaddr;
+    }
+    socklen_t servaddr_len() {
+        return _servaddr_len;
+    }
+    const ChannelOption* option() {
+        return _option;
+    }
 
 private:
+    const ChannelOption* _option;
+    // don't implement something like lb(loadbalance), there is only one connection,
+    // So it is easily to guarente thread-safe, we just need a _in_use to indicate if the
+    // channel is in used.
+    // And the _join_thread_ids is the thread_id of the async calls, user can join the async
+    // call by channel_join()
     const char* _server_ip;
     int _server_port;
     struct sockaddr_in _servaddr;
     socklen_t _servaddr_len;
-    const ChannelOption* _option;
+
+    bool _in_use;
+    pthread_t _join_thread_ids;
 };
 
 }
