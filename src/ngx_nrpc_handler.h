@@ -25,6 +25,9 @@ void ngx_nrpc_dummy_write(ngx_event_t* wev);
 // finalize
 void ngx_nrpc_close_connection(ngx_connection_t* c);
 
+// reuse
+void ngx_nrpc_reuse_connection(ngx_event_t *rev);
+
 }
 #endif
 

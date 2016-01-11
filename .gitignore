@@ -17,9 +17,13 @@ test/test_protocol
 test/test_serialize_parse
 test/test_service
 
-sample/server
 sample/client
-sample/test_client
+sample/client_async
+sample/client_connection_reuse
+sample/client_connection_reuse_sync
+sample/server
 sample/server_service_context
+sample/server_connection_reuse
+
 sample/logs/
 

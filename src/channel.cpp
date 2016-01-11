@@ -7,21 +7,23 @@ extern "C" {
 #include <string.h>
 }
 #include <iostream>
+#include <algorithm>
 #include <common.h>
 #include "info_log_context.h"
 #include "controller.h"
 #include "protocol.h"
-
 #include "channel.h"
 
 namespace nrpc {
 
 Channel::Channel()
 {
+    _mutex = PTHREAD_MUTEX_INITIALIZER;
 }
 
 Channel::~Channel()
 {
+    pthread_mutex_destroy(&_mutex);
 }
 
 bool Channel::init(const char* server_addr, int port, const ChannelOption* option)
@@ -35,125 +37,110 @@ bool Channel::init(const char* server_addr, int port, const ChannelOption* optio
     }
 
     _option = option;
-    return true; 
+    return true;
 }
 
-struct ChannelOperateParams {
-    ChannelOperateParams(Channel* channel, Controller* cntl, google::protobuf::Closure* done) :
-            channel(channel), cntl(cntl), done(done) {}
-    Channel* channel;
-    Controller* cntl;
-    google::protobuf::Closure* done;
-};
-
-static void rpc_call_core(ChannelOperateParams* params)
+int Channel::new_connection()
 {
-    Channel* channel = params->channel;
-    Controller* cntl = params->cntl;
-    ngxplus::IOBuf* msg = cntl->iobuf();
-
+    LOG(NOTICE, "new connection");
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        cntl->set_result(RPC_INNER_ERROR);
-        cntl->set_result_text("create sockfd error");
-        return cntl->finalize();
+        return -1;
+    }
+    if (!common::connect_with_timeout(sockfd, (struct sockaddr*)&_servaddr,
+                _servaddr_len, _option->connection_timeout)) {
+        return -1;
     }
 
-    if (!common::connect_with_timeout(sockfd, channel->servaddr(),
-                channel->servaddr_len(), channel->option()->connection_timeout)) {
-        cntl->set_result(RPC_INNER_ERROR);
-        cntl->set_result_text("connect error");
-        return cntl->finalize();
-    }
-
-    char *send_buf;
-    char *recv_buf;
-    int size;
-    int remain_len;
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(msg);
-    while (zero_in_stream.Next((const void**)&send_buf, &size)) {
-        if (size == 0) {
-            continue;
-        }
-        remain_len = size;
-        while (remain_len > 0) {
-            int current_send_len = common::send_with_timeout(sockfd, send_buf,
-                    remain_len, channel->option()->send_timeout);
-            if (current_send_len < 0) {
-                cntl->set_result(RPC_SEND_ERROR);
-                cntl->set_result_text("send error or timeout");
-                return cntl->finalize();
-            }
-            remain_len -= current_send_len;
-            send_buf += current_send_len;
-        }
-    }
-
-    msg->release_all();
-    cntl->set_state(RPC_SESSION_READING);
-
-    bool recv_eof = false;
-    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
-    while (zero_out_stream.Next((void**)&recv_buf, &size)) {
-        if (size == 0) {
-            continue;
-        }
-        remain_len = size;
-        while (remain_len > 0) {
-            int current_recv_len = common::recv_with_timeout(sockfd, recv_buf,
-                    remain_len, channel->option()->read_timeout);
-            if (current_recv_len < 0) {
-                cntl->set_result(RPC_READ_ERROR);
-                cntl->set_result_text("read error or timeout");
-                return cntl->finalize();
-            }
-            if (current_recv_len == 0) {
-                recv_eof = true;
-            }
-            ParseResult parse_result =  default_protocol.parse(cntl, recv_eof);
-            if (parse_result == PARSE_DONE) {
-                // parse in read process
-                cntl->set_state(RPC_SESSION_PROCESSING);
-                return default_protocol.process_response(cntl);
-            } else if (parse_result == PARSE_INCOMPLETE) {
-                remain_len -= current_recv_len;
-                recv_buf += current_recv_len;
-            } else {
-                // error
-                cntl->set_result(RPC_INNER_ERROR);
-                cntl->set_result_text("parse response error");
-                return cntl->finalize();
-            }
-        }
-    }
+    _connection_pool[sockfd] = {pthread_self(), true, 0};
+    return sockfd;
 }
 
-static void* rpc_call(void* arg)
+int Channel::get_connection()
 {
-/*     make_scope([] () {
- *             delete params;
- *         }
- *     );
- */
-    ChannelOperateParams* params = static_cast<ChannelOperateParams*>(arg);
-    google::protobuf::Closure* done = params->done;
-    // process channel state, reuse, joinable calls
+    auto mutex_scope = common::makeScopeGuard(
+        [this] () {
+            if (pthread_mutex_lock(&_mutex) != 0) {
+                LOG(ALERT, "lock mutex error: %s", strerror(errno));
+                pthread_exit((void*)NULL);
+            }
+        },
+        [this] () {pthread_mutex_unlock(&_mutex);}
+    );
 
-    rpc_call_core(params);
-    if (done) {
-        done->Run();
+    ConnectionMap::iterator it;
+    for (it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
+        LOG(NOTICE, "find old connection");
+        ConnectionInfo& cinfo = it->second;
+        if (cinfo.is_idle) {
+            LOG(NOTICE, "is idle");
+            // TODO: check if server close
+            cinfo.is_idle = false;
+            break;
+        }
     }
-    return NULL;
+    if (it != _connection_pool.end()) {
+        LOG(NOTICE, "reuse connection");
+        return it->first;
+    }
+
+    int sockfd = new_connection();
+    if (sockfd != -1) {
+        _connection_pool[sockfd].is_idle = false;
+    }
+    return sockfd;
+}
+
+bool Channel::release_connection(int sockfd)
+{
+    auto mutex_scope = common::makeScopeGuard(
+        [this] () {
+            if (pthread_mutex_lock(&_mutex) != 0) {
+                LOG(ALERT, "lock mutex error: %s", strerror(errno));
+                pthread_exit((void*)NULL);
+            }
+        },
+        [this] () {pthread_mutex_unlock(&_mutex);}
+    );
+
+    LOG(NOTICE, "release connection");
+    //_connection_pool[sockfd].is_idle = true;
+    ConnectionMap::iterator it = _connection_pool.find(sockfd);
+    if (it != _connection_pool.end()) {
+        ConnectionInfo& cinfo = it->second;
+        cinfo.is_idle = true;
+    }
+    return true;
+}
+
+bool Channel::close_connection(int sockfd)
+{
+    auto mutex_scope = common::makeScopeGuard(
+        [this] () {
+            if (pthread_mutex_lock(&_mutex) != 0) {
+                LOG(ALERT, "lock mutex error: %s", strerror(errno));
+                pthread_exit((void*)NULL);
+            }
+        },
+        [this] () {pthread_mutex_unlock(&_mutex);}
+    );
+
+    LOG(NOTICE, "close connection");
+    close(sockfd);
+    ConnectionMap::iterator it = _connection_pool.find(sockfd);
+    if (it != _connection_pool.end()) {
+        _connection_pool.erase(it);
+        return true;
+    }
+    return false;
 }
 
 void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
-                    google::protobuf::RpcController* controller,
-                    const google::protobuf::Message* request,
-                    google::protobuf::Message* response,
-                    google::protobuf::Closure* done)
+        google::protobuf::RpcController* controller,
+        const google::protobuf::Message* request,
+        google::protobuf::Message* response,
+        google::protobuf::Closure* done)
 {
-    // async mode not implemented yet
-    (void) done;
     Controller* cntl = static_cast<Controller*>(controller);
     cntl->set_state(RPC_SESSION_SENDING);
     cntl->set_response(response);
@@ -177,20 +164,137 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
         cntl->set_result_text("can't create pthread");
         return cntl->finalize();
     }
+
     if (!done) {
+        // in sync mode, join it after pthread_create
         pthread_join(thid, NULL);
         return;
     }
     else {
-        // not implemented yet
+        _async_thread_ids.push_back(thid);
+        // just return. user should guarantee channel::~Channel() before all thread_exit or return.
+        // you can use channel_join before return main(), or construct channel in a big scope.
         return;
     }
 }
 
 bool Channel::channel_join()
 {
-    pthread_join(_join_thread_ids, NULL);
-    return true;
+    int error = 0;
+    std::for_each(_async_thread_ids.begin(), _async_thread_ids.end(),
+        [&error] (pthread_t& thid) {
+            if (pthread_join(thid, NULL) != 0) {
+                LOG(ALERT, "join thread[%lu] error");
+                error++;
+            } else {
+                LOG(INFO, "join thread[%lu] success");
+            }
+        }
+    );
+    _async_thread_ids.clear();
+    return (error == 0) ? true : false;
+}
+
+/****************************************
+ * pthread start_routine
+ *     ChannelOperateParams
+ *     rpc_call
+ ****************************************/
+static void rpc_call_core(ChannelOperateParams* params)
+{
+    Channel* channel = params->channel;
+    Controller* cntl = params->cntl;
+    ngxplus::IOBuf* msg = cntl->iobuf();
+
+    int sockfd = channel->get_connection();
+    if (sockfd == -1) {
+        cntl->set_result(RPC_INNER_ERROR);
+        cntl->set_result_text("get connect error");
+        return cntl->finalize();
+    }
+
+    char *send_buf;
+    char *recv_buf;
+    int size;
+    int remain_len;
+    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(msg);
+    while (zero_in_stream.Next((const void**)&send_buf, &size)) {
+        if (size == 0) {
+            continue;
+        }
+        remain_len = size;
+        while (remain_len > 0) {
+            int current_send_len = common::send_with_timeout(sockfd, send_buf,
+                    remain_len, channel->option()->send_timeout);
+            if (current_send_len < 0) {
+                cntl->set_result(RPC_SEND_ERROR);
+                cntl->set_result_text("send error or timeout");
+                channel->close_connection(sockfd);
+                return cntl->finalize();
+            }
+            remain_len -= current_send_len;
+            send_buf += current_send_len;
+        }
+    }
+
+    msg->release_all();
+    cntl->set_state(RPC_SESSION_READING);
+
+    bool recv_eof = false;
+    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
+    while (zero_out_stream.Next((void**)&recv_buf, &size)) {
+        if (size == 0) {
+            continue;
+        }
+        remain_len = size;
+        while (remain_len > 0) {
+            int current_recv_len = common::recv_with_timeout(sockfd, recv_buf,
+                    remain_len, channel->option()->read_timeout);
+            if (current_recv_len < 0) {
+                cntl->set_result(RPC_READ_ERROR);
+                cntl->set_result_text("read error or timeout");
+                channel->close_connection(sockfd);
+                return cntl->finalize();
+            }
+            if (current_recv_len == 0) {
+                recv_eof = true;
+            }
+            ParseResult parse_result =  default_protocol.parse(cntl, recv_eof);
+            if (parse_result == PARSE_DONE) {
+                // run here only if the parse is DONE, otherwise the connection is closed
+                recv_eof ? channel->close_connection(sockfd) : channel->release_connection(sockfd);
+                // process the response
+                cntl->set_state(RPC_SESSION_PROCESSING);
+                return default_protocol.process_response(cntl);
+            } else if (parse_result == PARSE_INCOMPLETE) {
+                remain_len -= current_recv_len;
+                recv_buf += current_recv_len;
+            } else {
+                // error
+                cntl->set_result(RPC_INNER_ERROR);
+                cntl->set_result_text("parse response error");
+                channel->close_connection(sockfd);
+                return cntl->finalize();
+            }
+        }
+    }
+
+    return;
+}
+
+void* rpc_call(void* arg)
+{
+    ChannelOperateParams* params = static_cast<ChannelOperateParams*>(arg);
+    google::protobuf::Closure* done = params->done;
+    // process channel state, reuse, joinable calls
+
+    rpc_call_core(params);
+    if (done) {
+        done->Run();
+    }
+
+    delete params;
+    return NULL;
 }
 
 }
