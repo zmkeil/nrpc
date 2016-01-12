@@ -166,7 +166,7 @@ void Controller::finalize_server_connection(ngx_connection_t* c)
     // reuse
     c->read->handler = ngx_nrpc_reuse_connection;
     c->write->handler = ngx_nrpc_dummy_write;
-    ngx_add_timer(c->read, _server->idle_timeout());
+    ngx_add_timer(c->read, _server->idle_timeout() * 1000);
     if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
         LOG(ALERT, "reuse connection error");
         return ngx_nrpc_close_connection(c);

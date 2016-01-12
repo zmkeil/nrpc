@@ -36,6 +36,8 @@ struct ServerOption {
     bool is_connection_reuse;
     // idle timeout before reused
     int idle_timeout;
+    // send response timeout
+    int write_timeout;
     // max concurrency
     int max_concurrency;
     // context factory, create context for pre-session
