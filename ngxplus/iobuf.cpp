@@ -9,7 +9,8 @@ IOBuf::IOBuf() : _pool(nullptr),
         _block_size(IOBUF_DEFAULT_BLOCK_SIZE),
         _blocks(0),
         _bytes(0),
-        _read_block(0)
+        _read_block(0),
+		_is_read_point_cached(false)
 {
 }
 
@@ -213,6 +214,27 @@ void IOBuf::carrayon()
     _bytes += _cut_remain_bytes;
     _cut_remain_bytes = 0;
     return;
+}
+
+void IOBuf::read_point_cache()
+{
+	_read_point_record = _read_point;
+	_read_pool_record = _read_pool;
+	_bytes_record = _bytes;
+	_is_read_point_cached = true;
+}
+
+bool IOBuf::read_point_resume()
+{
+	if (!_is_read_point_cached) {
+		LOG(NGX_LOG_LEVEL_ALERT, "read point not cached");
+		return false;
+	}
+	_read_point = _read_point_record;
+	_read_pool = _read_pool_record;
+	_bytes = _bytes_record;
+	_is_read_point_cached = false;
+	return true;
 }
 
 void IOBuf::dump_payload(std::string* payload)
