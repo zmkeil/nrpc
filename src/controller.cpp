@@ -13,6 +13,7 @@
 #include "service_context_log.h"
 #include "proto/nrpc_meta.pb.h"
 #include "ngx_nrpc_handler.h"
+#include "channel.h"
 
 namespace nrpc
 {
@@ -81,6 +82,10 @@ std::string Controller::ErrorText() const
     return std::string("OK");
 }
 
+void Controller::set_channel_operate_params(ChannelOperateParams* params)
+{
+    _params = params;
+}
 
 /***************************************
  * for server side
@@ -175,24 +180,35 @@ void Controller::finalize_server_connection(ngx_connection_t* c)
 
 void Controller::finalize_client()
 {
+    ChannelOperateParams* params = _params;
+    if (Failed()) {
+        if (params->max_retry_time-- > 0) {
+            if (msg->read_point_resume()) {
+                set_result(RPC_INNER_ERROR);
+                set_result_text("can't retry (msg resume error)");
+                return;
+            }
+            set_result(RPC_OK);
+            set_state(RPC_SESSION_SENDING);
+            // still in current pthread, and finally return to rpc_call()
+            return rpc_call_core(params);
+        }
+    }
     return;
 }
 
 void Controller::finalize()
 {
-    // free iobuf
-    if (_iobuf) {
-        delete _iobuf;
-    }
-
-    // free cntl
-    // free this
-
     if (!_is_server) {
         return finalize_client();
     }
 
     // server side
+    // free iobuf
+    if (_iobuf) {
+        delete _iobuf;
+    }
+
     // log
     ServiceContextLog* access_log = ServiceContextLog::get_context();
     access_log->clear();
@@ -208,6 +224,9 @@ void Controller::finalize()
 
     // close connection, clear timer and event OR keepalive for reuse
     finalize_server_connection(_ngx_connection);
+
+    // free cntl, then this session is over
+    delete this;
 
     return;
 }

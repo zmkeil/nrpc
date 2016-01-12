@@ -114,11 +114,11 @@ private:
  *     rpc_call
  ****************************************/
 struct ChannelOperateParams {
-    ChannelOperateParams(Channel* channel, Controller* cntl, google::protobuf::Closure* done) :
-        channel(channel), cntl(cntl), done(done) {}
+    ChannelOperateParams(Channel* channel, google::protobuf::Closure* done, int max_retry_time) :
+        channel(channel), done(done), max_retry_time(max_retry_time) {}
     Channel* channel;
-    Controller* cntl;
     google::protobuf::Closure* done;
+    int max_retry_time;
 };
 
 void* rpc_call(void* arg);
