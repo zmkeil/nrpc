@@ -238,7 +238,7 @@ void default_send_rpc_response(Controller* cntl, bool real_send)
     if (!default_nrpc_pack_handle(iobuf, *rpc_meta, *resp)) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("serialize response pack error");
-        cntl->finalize();
+        return cntl->finalize();
     }
     // end of process
     cntl->set_end_process_time_us(ngxplus::Timer::rawtime_us());

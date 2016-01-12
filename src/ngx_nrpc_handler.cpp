@@ -48,7 +48,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     int n = c->recv(c, (u_char*)&first_character, 1);
     if(n == NGX_AGAIN) {
         if (!rev->timer_set) {
-            ngx_add_timer(rev, cntl->server_read_timeout());
+            ngx_add_timer(rev, cntl->server_read_timeout() * 1000);
         }
         if (ngx_handle_read_event(rev, 0) != NGX_OK) {
             cntl->set_result(RPC_INNER_ERROR);
@@ -62,7 +62,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     if((n == 0) || (n == NGX_ERROR)) {
         // read eof or error
         cntl->set_result(RPC_READ_ERROR);
-        cntl->finalize();
+        return cntl->finalize();
     }
 
     // n == 1, determin the protocol
@@ -128,7 +128,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         if (!zero_out_stream.Next((void**)&buf, &size)) {
             cntl->set_result(RPC_INNER_ERROR);
             cntl->set_result_text("read request alloc error");
-            cntl->finalize();
+            return cntl->finalize();
         }
         if (size == 0) {
             continue;
@@ -160,7 +160,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
             return protocol->process_request(cntl);
         }
         else if (presult == PARSE_INCOMPLETE) {
-            ngx_add_timer(rev, cntl->server_read_timeout());
+            ngx_add_timer(rev, cntl->server_read_timeout() * 1000);
             if (ngx_handle_read_event(rev, 0) != NGX_OK) {
                 cntl->set_result(RPC_INNER_ERROR);
                 cntl->set_result_text("hanlde read event error");
@@ -197,7 +197,7 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
         int n = c->send(c, (u_char*)buf, size);
         if (n < size) {
             if (!wev->timer_set) {
-                ngx_add_timer(wev, 1/*cntl->write_timeout()*/);
+                ngx_add_timer(wev, cntl->server_write_timeout() * 1000);
             }
             if (ngx_handle_write_event(wev, 0) != NGX_OK) {
                 cntl->set_result(RPC_INNER_ERROR);

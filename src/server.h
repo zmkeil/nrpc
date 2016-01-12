@@ -26,6 +26,7 @@ struct ServerOption {
             read_timeout(3/*s*/),
             is_connection_reuse(false),
             idle_timeout(3),
+            write_timeout(3),
             max_concurrency(8),
             service_context_factory(nullptr) {}
 
@@ -64,6 +65,7 @@ public:
     int read_timeout();
     bool is_connection_reuse();
     int idle_timeout();
+    int write_timeout();
     ServiceContext* local_service_context();
 
 private:

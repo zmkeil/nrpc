@@ -128,6 +128,8 @@ public:
     // for server options
     ServiceContext* service_context();
     int server_read_timeout();
+    int server_write_timeout();
+
 
     // -------------------------------------------------------------------
     //                      Both-side methods.

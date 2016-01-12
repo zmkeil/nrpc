@@ -91,4 +91,9 @@ int Server::idle_timeout()
     return _option->idle_timeout;
 }
 
+int Server::write_timeout()
+{
+    return _option->write_timeout;
+}
+
 }

@@ -127,6 +127,11 @@ int Controller::server_read_timeout()
     return _server->read_timeout();
 }
 
+int Controller::server_write_timeout()
+{
+    return _server->write_timeout();
+}
+
 
 /***************************************
  * for both side
