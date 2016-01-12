@@ -47,6 +47,10 @@ public:
     bool cutn(int count);
     void carrayon();
 
+	// store and resume the read point at one time
+	void read_point_cache();
+	bool read_point_resume();
+
     void dump_payload(std::string* payload);
     void print_payload();
     void print_payload(size_t capacity);
@@ -71,6 +75,12 @@ private:
     char* _read_point;
     int _read_block;
     ngx_pool_t* _read_pool;
+
+	/* for read point restore */
+	char* _read_point_record;
+	ngx_pool_t* _read_pool_record;
+	size_t _bytes_record;
+	bool _is_read_point_cached;
 };
 
 }

@@ -19,6 +19,7 @@ int main()
     iobuf.print_payload();
     std::cout << std::endl << "-------------------------->" << std::endl;
 
+	iobuf.read_point_cache();
     ngxplus::IOBufAsZeroCopyInputStream zero_copy_in(&iobuf);
     if (!zero_copy_in.Next((const void**)&buf_in, &size)) {
         std::cout << "in next error" << std::endl;
@@ -28,5 +29,10 @@ int main()
     // _bytes = 0, _read_point == d.last
     iobuf.print_info();
     iobuf.print_payload();
+    std::cout << std::endl << "-------------------------->" << std::endl;
+
+	iobuf.read_point_resume();
+	iobuf.print_info();
+	iobuf.print_payload();
     return 0;
 }
