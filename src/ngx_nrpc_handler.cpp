@@ -8,13 +8,8 @@ void ngx_nrpc_close_connection(ngx_connection_t* c)
 {
     c->destroyed = 1;
 
-    if (c->read->timer_set) {
-        ngx_del_timer(c->read);
-    }
-    if (c->write->timer_set) {
-        ngx_del_timer(c->write);
-    }
-
+    // this function will delete the timer and event,
+    // recycle the connection to free_queue
     ngx_close_connection(c);
     return;
 }
@@ -71,8 +66,13 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
         return;
     }
 
-    if((n == 0) || (n == NGX_ERROR)) {
-        // read eof or error
+    // read eof means the session don't start(the client channel destructs early)
+    // OR the connection isn't reused more
+    if (n == 0) {
+        delete cntl;
+        ngx_nrpc_close_connection(c);
+    }
+    if (n == NGX_ERROR) {
         cntl->set_result(RPC_READ_ERROR);
         return cntl->finalize();
     }

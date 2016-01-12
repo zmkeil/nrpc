@@ -74,9 +74,16 @@ int Channel::get_connection()
         ConnectionInfo& cinfo = it->second;
         if (cinfo.is_idle) {
             LOG(NOTICE, "is idle");
-            // TODO: check if server close
-            cinfo.is_idle = false;
-            break;
+            // check if server close, but this can't guarantee that the connection is
+            // still establish when you send data.
+            // So in client side, we should provide retry mechanism
+            if (!common::is_socket_clear_and_idle(sockfd)) {
+                LOG(NOTICE, "server already close connection");
+                close_connection(sockfd);
+            } else {
+                cinfo.is_idle = false;
+                break;
+            }
         }
     }
     if (it != _connection_pool.end()) {
@@ -89,6 +96,11 @@ int Channel::get_connection()
         _connection_pool[sockfd].is_idle = false;
     }
     return sockfd;
+}
+
+static int get_connection_handler(Channel* channel)
+{
+    return channel->get_connection();
 }
 
 bool Channel::release_connection(int sockfd)
@@ -113,6 +125,11 @@ bool Channel::release_connection(int sockfd)
     return true;
 }
 
+static bool release_connection_handler(Channel* channel, int sockfd)
+{
+    return channel->release_connection(sockfd);
+}
+
 bool Channel::close_connection(int sockfd)
 {
     auto mutex_scope = common::makeScopeGuard(
@@ -135,6 +152,11 @@ bool Channel::close_connection(int sockfd)
     return false;
 }
 
+static bool close_connection_handler(Channel* channel, int sockfd)
+{
+    return channel->close_connection(sockfd);
+}
+
 void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
         google::protobuf::RpcController* controller,
         const google::protobuf::Message* request,
@@ -142,6 +164,7 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
         google::protobuf::Closure* done)
 {
     Controller* cntl = static_cast<Controller*>(controller);
+    // init session protocol
     cntl->set_state(RPC_SESSION_SENDING);
     cntl->set_response(response);
     cntl->set_protocol(NRPC_PROTOCOL_DEFAULT_NUM);
@@ -157,9 +180,10 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
 
     // so channel must be deconstructed after rpc_call
     // In sync mode, this usually is not problem, In async mode, be carefully
-    ChannelOperateParams* channel_operate_params = new ChannelOperateParams(this, cntl, done);
+    ChannelOperateParams* channel_operate_params = new ChannelOperateParams(this, done, _option.max_retry_time);
+    cntl->set_channel_operate_params(channel_operate_params);
     pthread_t thid;
-    if (pthread_create(&thid, NULL/*joinable*/, &rpc_call, channel_operate_params) != 0) {
+    if (pthread_create(&thid, NULL/*joinable*/, &rpc_call, cntl) != 0) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("can't create pthread");
         return cntl->finalize();
@@ -200,11 +224,12 @@ bool Channel::channel_join()
  *     ChannelOperateParams
  *     rpc_call
  ****************************************/
-static void rpc_call_core(ChannelOperateParams* params)
+static void rpc_call_core(Controller* cntl)
 {
+    ChannelOperateParams* params = cntl->channel_operate_params();
     Channel* channel = params->channel;
-    Controller* cntl = params->cntl;
     ngxplus::IOBuf* msg = cntl->iobuf();
+    msg->read_point_cache();
 
     int sockfd = channel->get_connection();
     if (sockfd == -1) {
@@ -284,16 +309,17 @@ static void rpc_call_core(ChannelOperateParams* params)
 
 void* rpc_call(void* arg)
 {
-    ChannelOperateParams* params = static_cast<ChannelOperateParams*>(arg);
+    Controller* cntl = static_cast<Controller*>(arg);
+    ChannelOperateParams* params = cntl->channel_operate_params();
     google::protobuf::Closure* done = params->done;
     // process channel state, reuse, joinable calls
 
-    rpc_call_core(params);
+    rpc_call_core(cntl);
     if (done) {
         done->Run();
     }
 
-    delete params;
+    delete cntl;
     return NULL;
 }
 

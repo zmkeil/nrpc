@@ -27,6 +27,8 @@ extern "C" {
 namespace nrpc
 {
 
+struct ChannelOperateParams;
+
 enum RPC_SESSION_STATE {
     RPC_SESSION_READING = 0,
     RPC_SESSION_PROCESSING,
@@ -278,6 +280,10 @@ private:
     Server* _server;
     ServiceContext* _service_context;
     ngx_connection_t* _ngx_connection;
+
+    // client info
+    // the current rpc_call ctx, used in retry
+    ChannelOperateParams* params;
 };
 
 }
