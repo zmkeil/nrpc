@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-08 22:36
+  Modified date : 2016-01-12 00:31
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -164,7 +164,7 @@ void Controller::finalize_server_connection(ngx_connection_t* c)
     }
 
     // reuse
-    c->read->handler = ngx_nrpc_determine_policy;
+    c->read->handler = ngx_nrpc_reuse_connection;
     c->write->handler = ngx_nrpc_dummy_write;
     ngx_add_timer(c->read, _server->idle_timeout());
     if (ngx_handle_read_event(c->read, 0) != NGX_OK) {
@@ -181,7 +181,12 @@ void Controller::finalize_client()
 void Controller::finalize()
 {
     // free iobuf
-    delete _iobuf;
+    if (_iobuf) {
+        delete _iobuf;
+    }
+
+    // free cntl
+    // free this
 
     if (!_is_server) {
         return finalize_client();

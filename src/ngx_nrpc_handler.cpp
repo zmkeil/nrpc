@@ -31,6 +31,18 @@ void ngx_nrpc_init_connection(ngx_connection_t *c)
     return ngx_nrpc_determine_policy(c->read);
 }
 
+void ngx_nrpc_reuse_connection(ngx_event_t *rev)
+{
+    ngx_connection_t *c = (ngx_connection_t*)rev->data;
+
+    if (rev->timedout) {
+        // no data from client reuse the connection
+        return ngx_nrpc_close_connection(c);
+    }
+    // re-init the connection, new Controller
+    return ngx_nrpc_init_connection(c);
+}
+
 // read one byte to determin policy
 // just finalize when (timeout | eof | error)
 void ngx_nrpc_determine_policy(ngx_event_t *rev)

@@ -57,11 +57,19 @@ PROTO=echo
 objs=echo.pb.o \
 	 server.o \
 	 server_service_context.o \
-	 client.o
+	 server_connection_reuse.o \
+	 client.o \
+	 client_async.o \
+	 client_connection_reuse.o \
+	 client_connection_reuse_sync.o
 
 testbin=server \
 		server_service_context \
-        client
+		server_connection_reuse \
+        client \
+		client_async \
+		client_connection_reuse \
+		client_connection_reuse_sync
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -107,9 +115,25 @@ server_service_context:server_service_context.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_service_context $(LDFLAGS)
 
+server_connection_reuse:server_connection_reuse.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_connection_reuse $(LDFLAGS)
+
 client:client.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client $(LDFLAGS)
+
+client_async:client_async.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_async $(LDFLAGS)
+
+client_connection_reuse:client_connection_reuse.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_connection_reuse $(LDFLAGS)
+
+client_connection_reuse_sync:client_connection_reuse_sync.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_connection_reuse_sync $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc
