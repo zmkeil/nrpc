@@ -42,7 +42,7 @@ bool Channel::init(const char* server_addr, int port, const ChannelOption* optio
 
 int Channel::new_connection()
 {
-    LOG(NOTICE, "new connection");
+    LOG(INFO, "new connection");
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
         return -1;
@@ -58,27 +58,17 @@ int Channel::new_connection()
 
 int Channel::get_connection()
 {
-    auto mutex_scope = common::makeScopeGuard(
-        [this] () {
-            if (pthread_mutex_lock(&_mutex) != 0) {
-                LOG(ALERT, "lock mutex error: %s", strerror(errno));
-                pthread_exit((void*)NULL);
-            }
-        },
-        [this] () {pthread_mutex_unlock(&_mutex);}
-    );
-
     ConnectionMap::iterator it;
     for (it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
-        LOG(NOTICE, "find old connection");
+        LOG(INFO, "find old connection");
         ConnectionInfo& cinfo = it->second;
         if (cinfo.is_idle) {
-            LOG(NOTICE, "is idle");
             // check if server close, but this can't guarantee that the connection is
             // still establish when you send data.
             // So in client side, we should provide retry mechanism
+            int sockfd = it->first;
             if (!common::is_socket_clear_and_idle(sockfd)) {
-                LOG(NOTICE, "server already close connection");
+                LOG(INFO, "server already close connection");
                 close_connection(sockfd);
             } else {
                 cinfo.is_idle = false;
@@ -86,15 +76,16 @@ int Channel::get_connection()
             }
         }
     }
-    if (it != _connection_pool.end()) {
-        LOG(NOTICE, "reuse connection");
-        return it->first;
-    }
 
-    int sockfd = new_connection();
-    if (sockfd != -1) {
-        _connection_pool[sockfd].is_idle = false;
+    int sockfd;
+    if (it != _connection_pool.end()) {
+        LOG(INFO, "reuse connection");
+        sockfd = it->first;
+    } else {
+        // may be -1
+        sockfd = new_connection();
     }
+    LOG(INFO, "get connection [%d]", sockfd);
     return sockfd;
 }
 
@@ -105,23 +96,8 @@ static int get_connection_handler(Channel* channel)
 
 bool Channel::release_connection(int sockfd)
 {
-    auto mutex_scope = common::makeScopeGuard(
-        [this] () {
-            if (pthread_mutex_lock(&_mutex) != 0) {
-                LOG(ALERT, "lock mutex error: %s", strerror(errno));
-                pthread_exit((void*)NULL);
-            }
-        },
-        [this] () {pthread_mutex_unlock(&_mutex);}
-    );
-
-    LOG(NOTICE, "release connection");
-    //_connection_pool[sockfd].is_idle = true;
-    ConnectionMap::iterator it = _connection_pool.find(sockfd);
-    if (it != _connection_pool.end()) {
-        ConnectionInfo& cinfo = it->second;
-        cinfo.is_idle = true;
-    }
+    LOG(INFO, "release connection");
+    _connection_pool[sockfd].is_idle = true;
     return true;
 }
 
@@ -132,17 +108,7 @@ static bool release_connection_handler(Channel* channel, int sockfd)
 
 bool Channel::close_connection(int sockfd)
 {
-    auto mutex_scope = common::makeScopeGuard(
-        [this] () {
-            if (pthread_mutex_lock(&_mutex) != 0) {
-                LOG(ALERT, "lock mutex error: %s", strerror(errno));
-                pthread_exit((void*)NULL);
-            }
-        },
-        [this] () {pthread_mutex_unlock(&_mutex);}
-    );
-
-    LOG(NOTICE, "close connection");
+    LOG(INFO, "close connection");
     close(sockfd);
     ConnectionMap::iterator it = _connection_pool.find(sockfd);
     if (it != _connection_pool.end()) {
@@ -180,7 +146,7 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
 
     // so channel must be deconstructed after rpc_call
     // In sync mode, this usually is not problem, In async mode, be carefully
-    ChannelOperateParams* channel_operate_params = new ChannelOperateParams(this, done, _option.max_retry_time);
+    ChannelOperateParams* channel_operate_params = new ChannelOperateParams(this, done, _option->max_retry_time);
     cntl->set_channel_operate_params(channel_operate_params);
     pthread_t thid;
     if (pthread_create(&thid, NULL/*joinable*/, &rpc_call, cntl) != 0) {
@@ -224,14 +190,14 @@ bool Channel::channel_join()
  *     ChannelOperateParams
  *     rpc_call
  ****************************************/
-static void rpc_call_core(Controller* cntl)
+void rpc_call_core(Controller* cntl)
 {
     ChannelOperateParams* params = cntl->channel_operate_params();
     Channel* channel = params->channel;
     ngxplus::IOBuf* msg = cntl->iobuf();
     msg->read_point_cache();
 
-    int sockfd = channel->get_connection();
+    int sockfd = common::run_with_pthread_mutex(channel->mutex(), &get_connection_handler, channel);
     if (sockfd == -1) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("get connect error");
@@ -287,7 +253,8 @@ static void rpc_call_core(Controller* cntl)
             ParseResult parse_result =  default_protocol.parse(cntl, recv_eof);
             if (parse_result == PARSE_DONE) {
                 // run here only if the parse is DONE, otherwise the connection is closed
-                recv_eof ? channel->close_connection(sockfd) : channel->release_connection(sockfd);
+                recv_eof ? common::run_with_pthread_mutex(channel->mutex(), &close_connection_handler, channel, sockfd)
+                    : common::run_with_pthread_mutex(channel->mutex(), &release_connection_handler, channel, sockfd);
                 // process the response
                 cntl->set_state(RPC_SESSION_PROCESSING);
                 return default_protocol.process_response(cntl);

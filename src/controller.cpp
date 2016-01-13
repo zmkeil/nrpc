@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-12 00:31
+  Modified date : 2016-01-12 21:15
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -87,6 +87,11 @@ void Controller::set_channel_operate_params(ChannelOperateParams* params)
     _params = params;
 }
 
+ChannelOperateParams* Controller::channel_operate_params()
+{
+    return _params;
+}
+
 /***************************************
  * for server side
  *    about service and server option
@@ -113,7 +118,8 @@ bool Controller::server_side_init(ngx_connection_t* c)
     return true;
 }
 
-void Controller::SetFailed(const std::string& reason) {
+void Controller::SetFailed(const std::string& reason)
+{
     RpcMeta* rpc_meta = ((DefaultProtocolCtx*)_protocol_ctx)->rpc_meta;
     RpcResponseMeta* resp_meta = rpc_meta->mutable_response();
     resp_meta->set_error_code(RPC_SERVICE_FAILED);
@@ -178,20 +184,23 @@ void Controller::finalize_server_connection(ngx_connection_t* c)
     }
 }
 
+void rpc_call_core(Controller* cntl);
+
 void Controller::finalize_client()
 {
     ChannelOperateParams* params = _params;
     if (Failed()) {
         if (params->max_retry_time-- > 0) {
-            if (msg->read_point_resume()) {
+            if (!_iobuf->read_point_resume()) {
                 set_result(RPC_INNER_ERROR);
                 set_result_text("can't retry (msg resume error)");
                 return;
             }
+            LOG(INFO, "channel retry [%d]", params->max_retry_time);
             set_result(RPC_OK);
             set_state(RPC_SESSION_SENDING);
             // still in current pthread, and finally return to rpc_call()
-            return rpc_call_core(params);
+            return rpc_call_core(this);
         }
     }
     return;
@@ -226,7 +235,7 @@ void Controller::finalize()
     finalize_server_connection(_ngx_connection);
 
     // free cntl, then this session is over
-    delete this;
+    // delete this;
 
     return;
 }

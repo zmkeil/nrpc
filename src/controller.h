@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.h
   Create date	: 2015-12-02 23:47
-  Modified date : 2016-01-07 00:40
+  Modified date : 2016-01-12 20:34
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -79,6 +79,10 @@ public:
     bool Failed() const;
 
     std::string ErrorText() const;
+
+    void set_channel_operate_params(ChannelOperateParams* params);
+
+    ChannelOperateParams* channel_operate_params();
 
     // TODO: reuse controller
     virtual void Reset() {
@@ -283,7 +287,7 @@ private:
 
     // client info
     // the current rpc_call ctx, used in retry
-    ChannelOperateParams* params;
+    ChannelOperateParams* _params;
 };
 
 }
