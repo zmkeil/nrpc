@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-12 21:15
+  Modified date : 2016-01-13 16:16
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -30,7 +30,10 @@ Controller::Controller() :
     _service_set(nullptr),
     _server(nullptr),
     _service_context(nullptr),
-    _ngx_connection(nullptr)
+    _ngx_connection(nullptr),
+	_params(nullptr),
+	_client_sockfd(-1),
+	_client_recv_eof(false)
 {
 }
 
@@ -80,16 +83,6 @@ std::string Controller::ErrorText() const
         }
     }
     return std::string("OK");
-}
-
-void Controller::set_channel_operate_params(ChannelOperateParams* params)
-{
-    _params = params;
-}
-
-ChannelOperateParams* Controller::channel_operate_params()
-{
-    return _params;
 }
 
 /***************************************
@@ -170,6 +163,12 @@ bool Controller::set_protocol(unsigned protocol_num)
 
 void Controller::finalize_server_connection(ngx_connection_t* c)
 {
+	// close the connection if any errors, avoid dirty data
+	if (_result != RPC_OK) {
+		return ngx_nrpc_close_connection(c);
+	}
+
+	// reuse flag default false, set it in ServerOption
     if (!_server->is_connection_reuse()) {
         return ngx_nrpc_close_connection(c);
     }
@@ -185,24 +184,45 @@ void Controller::finalize_server_connection(ngx_connection_t* c)
 }
 
 void rpc_call_core(Controller* cntl);
+bool drop_connection_handler(Channel* channel, int sockfd);
 
 void Controller::finalize_client()
 {
     ChannelOperateParams* params = _params;
+	// failed
     if (Failed()) {
+		// in client side, also drop the connection to avoid dirty data if failed
+		if (_client_sockfd != -1) {
+			common::run_with_pthread_mutex(params->channel->mutex(), &drop_connection_handler, params->channel, _client_sockfd);
+		}
+		// then retry
         if (params->max_retry_time-- > 0) {
+			// TODO: some wrong,
             if (!_iobuf->read_point_resume()) {
                 set_result(RPC_INNER_ERROR);
                 set_result_text("can't retry (msg resume error)");
                 return;
             }
-            LOG(INFO, "channel retry [%d]", params->max_retry_time);
+            LOG(INFO, "channel retry [remain %d]", params->max_retry_time);
+			set_client_sockfd(-1);
+			set_client_recv_eof(false);
             set_result(RPC_OK);
             set_state(RPC_SESSION_SENDING);
             // still in current pthread, and finally return to rpc_call()
             return rpc_call_core(this);
-        }
+        } else {
+			LOG(INFO, "all retries failed");
+			// maybe here is a appropriate hook
+			params->channel->close_connection();
+			return;
+		}
     }
+
+	// success
+	if (_client_recv_eof) {
+		common::run_with_pthread_mutex(params->channel->mutex(), &drop_connection_handler, params->channel, _client_sockfd);
+		// release is excuted immediately after parese done
+	}
     return;
 }
 

@@ -4,6 +4,12 @@
 
 namespace nrpc {
 
+void ngx_nrpc_finalize_session(Controller* cntl)
+{
+	cntl->finalize();
+	delete cntl;
+}
+
 void ngx_nrpc_close_connection(ngx_connection_t* c)
 {
     c->destroyed = 1;
@@ -18,7 +24,7 @@ void ngx_nrpc_init_connection(ngx_connection_t *c)
 {
     auto cntl = new Controller();
     if (!cntl->server_side_init(c)) {
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
     c->data = (void*)cntl;
 
@@ -48,7 +54,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     if (rev->timedout) {
         c->timedout = 1;
         cntl->set_result(RPC_READ_TIMEOUT);
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
 
     char first_character;
@@ -60,7 +66,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
         if (ngx_handle_read_event(rev, 0) != NGX_OK) {
             cntl->set_result(RPC_INNER_ERROR);
             cntl->set_result_text("hanlde read event error");
-            return cntl->finalize();
+            return ngx_nrpc_finalize_session(cntl);
         }
         // for next event
         return;
@@ -68,13 +74,16 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
 
     // read eof means the session don't start(the client channel destructs early)
     // OR the connection isn't reused more
+	// SO don't need finalize_session, just close_connection, delete cntl, then return
     if (n == 0) {
-        delete cntl;
         ngx_nrpc_close_connection(c);
+        delete cntl/*this is a empty cntl now*/;
+		LOG(NOTICE, "connection close before send anything");
+		return/*don't continue*/;
     }
     if (n == NGX_ERROR) {
         cntl->set_result(RPC_READ_ERROR);
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
 
     // n == 1, determin the protocol
@@ -94,7 +103,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
         break;
     }
     if (!cntl->set_protocol(protocol_num/*default_protocol*/)) {
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
 
     // get iobuf, and read the following data
@@ -104,7 +113,7 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     if (len != 1) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("determin alloc error");
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
     buf[0] = first_character;
     cntl->set_iobuf(iobuf);
@@ -121,14 +130,14 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
     if (rev->timedout) {
         c->timedout = 1;
         cntl->set_result(RPC_READ_TIMEOUT);
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
 
     RPC_SESSION_STATE cntl_state = cntl->state();
     if (cntl_state != RPC_SESSION_READING) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("should not come into read request");
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
 
     ngxplus::IOBuf *iobuf = cntl->iobuf();
@@ -140,7 +149,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         if (!zero_out_stream.Next((void**)&buf, &size)) {
             cntl->set_result(RPC_INNER_ERROR);
             cntl->set_result_text("read request alloc error");
-            return cntl->finalize();
+            return ngx_nrpc_finalize_session(cntl);
         }
         if (size == 0) {
             continue;
@@ -151,7 +160,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         }
         if (len == NGX_ERROR) {
             cntl->set_result(RPC_READ_ERROR);
-            return cntl->finalize();
+            return ngx_nrpc_finalize_session(cntl);
         }
 
         // read eof or again
@@ -176,7 +185,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
             if (ngx_handle_read_event(rev, 0) != NGX_OK) {
                 cntl->set_result(RPC_INNER_ERROR);
                 cntl->set_result_text("hanlde read event error");
-                return cntl->finalize();
+                return ngx_nrpc_finalize_session(cntl);
             }
             return;
         }
@@ -188,7 +197,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
             if (presult == PARSE_BAD_FORMAT) {
                 cntl->set_result_text("request bad format");
             }
-            return cntl->finalize();
+            return ngx_nrpc_finalize_session(cntl);
         }
     }
 }
@@ -214,7 +223,7 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
             if (ngx_handle_write_event(wev, 0) != NGX_OK) {
                 cntl->set_result(RPC_INNER_ERROR);
                 cntl->set_result_text("hanlde write event error");
-                return cntl->finalize();
+                return ngx_nrpc_finalize_session(cntl);
             }
             // for the next event_loop
             return;
@@ -225,7 +234,7 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
     cntl->set_result(RPC_OK);
     cntl->set_state(RPC_SESSION_LOGING);
     cntl->set_end_time_us(ngxplus::Timer::rawtime_us());
-    return cntl->finalize();
+    return ngx_nrpc_finalize_session(cntl);
 }
 
 void ngx_nrpc_dummy_read(ngx_event_t* rev)

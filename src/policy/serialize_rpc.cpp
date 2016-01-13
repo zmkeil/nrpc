@@ -156,7 +156,7 @@ void default_process_request(Controller* cntl)
     if (!method_property) {
         cntl->set_result(RPC_PROCESS_ERROR);
         cntl->set_result_text("rpc method not found");
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
 
     const google::protobuf::MethodDescriptor* method_descriptor =
@@ -175,7 +175,7 @@ void default_process_request(Controller* cntl)
     if (!req->ParseFromZeroCopyStream(&zero_in_stream)) {
         cntl->set_result(RPC_PROCESS_ERROR);
         cntl->set_result_text("Failed to parse rpc request");
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
     // release the remian payload
     req_buf->carrayon();
@@ -238,7 +238,7 @@ void default_send_rpc_response(Controller* cntl, bool real_send)
     if (!default_nrpc_pack_handle(iobuf, *rpc_meta, *resp)) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("serialize response pack error");
-        return cntl->finalize();
+        return ngx_nrpc_finalize_session(cntl);
     }
     // end of process
     cntl->set_end_process_time_us(ngxplus::Timer::rawtime_us());

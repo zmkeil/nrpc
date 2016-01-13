@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.h
   Create date	: 2015-12-02 23:47
-  Modified date : 2016-01-12 20:34
+  Modified date : 2016-01-13 16:04
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -80,9 +80,30 @@ public:
 
     std::string ErrorText() const;
 
-    void set_channel_operate_params(ChannelOperateParams* params);
-
-    ChannelOperateParams* channel_operate_params();
+	void set_channel_operate_params(ChannelOperateParams* params)
+	{
+		_params = params;
+	}
+	ChannelOperateParams* channel_operate_params()
+	{
+		return _params;
+	}
+	void set_client_sockfd(int sockfd)
+	{
+		_client_sockfd = sockfd;
+	}
+	int client_sockfd()
+	{
+		return _client_sockfd;
+	}
+	void set_client_recv_eof(bool recv_eof)
+	{
+		_client_recv_eof = recv_eof;
+	}
+	bool recv_eof()
+	{
+		return _client_recv_eof;
+	}
 
     // TODO: reuse controller
     virtual void Reset() {
@@ -288,6 +309,8 @@ private:
     // client info
     // the current rpc_call ctx, used in retry
     ChannelOperateParams* _params;
+	int _client_sockfd;
+	bool _client_recv_eof;
 };
 
 }

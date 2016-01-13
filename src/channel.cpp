@@ -42,21 +42,29 @@ bool Channel::init(const char* server_addr, int port, const ChannelOption* optio
 
 int Channel::new_connection()
 {
-    LOG(INFO, "new connection");
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        return -1;
-    }
-    if (!common::connect_with_timeout(sockfd, (struct sockaddr*)&_servaddr,
-                _servaddr_len, _option->connection_timeout)) {
-        return -1;
-    }
+    if (sockfd != -1) {
+		if (!common::connect_with_timeout(sockfd, (struct sockaddr*)&_servaddr,
+					_servaddr_len, _option->connection_timeout)) {
+			sockfd = -1;
+		}
+	}
 
-    _connection_pool[sockfd] = {pthread_self(), true, 0};
+    LOG(INFO, "new connection [%d]", sockfd);
     return sockfd;
 }
 
-int Channel::get_connection()
+void Channel::close_connection()
+{
+	while (!_close_connection_queue.empty()) {
+		int sockfd = _close_connection_queue.back();
+		_close_connection_queue.pop_back();
+		LOG(INFO, "close connection [%d]", sockfd);
+		close(sockfd);
+	}
+}
+
+int Channel::reuse_connection()
 {
     ConnectionMap::iterator it;
     for (it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
@@ -69,7 +77,7 @@ int Channel::get_connection()
             int sockfd = it->first;
             if (!common::is_socket_clear_and_idle(sockfd)) {
                 LOG(INFO, "server already close connection");
-                close_connection(sockfd);
+                drop_connection(sockfd);
             } else {
                 cinfo.is_idle = false;
                 break;
@@ -77,27 +85,25 @@ int Channel::get_connection()
         }
     }
 
-    int sockfd;
+    int sockfd = -1;
     if (it != _connection_pool.end()) {
-        LOG(INFO, "reuse connection");
         sockfd = it->first;
-    } else {
-        // may be -1
-        sockfd = new_connection();
-    }
-    LOG(INFO, "get connection [%d]", sockfd);
+	}
+    LOG(INFO, "reuse connection [%d]", sockfd);
     return sockfd;
 }
 
-static int get_connection_handler(Channel* channel)
+static int reuse_connection_handler(Channel* channel)
 {
-    return channel->get_connection();
+    return channel->reuse_connection();
 }
 
 bool Channel::release_connection(int sockfd)
 {
-    LOG(INFO, "release connection");
-    _connection_pool[sockfd].is_idle = true;
+    // if sockfd not exists, STL:map will insert a new with default constructor
+	_connection_pool[sockfd].is_idle = true;
+
+    LOG(INFO, "release connection [%d]", sockfd);
     return true;
 }
 
@@ -106,10 +112,10 @@ static bool release_connection_handler(Channel* channel, int sockfd)
     return channel->release_connection(sockfd);
 }
 
-bool Channel::close_connection(int sockfd)
+bool Channel::drop_connection(int sockfd)
 {
-    LOG(INFO, "close connection");
-    close(sockfd);
+    LOG(INFO, "drop connection [%d]", sockfd);
+	_close_connection_queue.push_back(sockfd);
     ConnectionMap::iterator it = _connection_pool.find(sockfd);
     if (it != _connection_pool.end()) {
         _connection_pool.erase(it);
@@ -118,9 +124,9 @@ bool Channel::close_connection(int sockfd)
     return false;
 }
 
-static bool close_connection_handler(Channel* channel, int sockfd)
+bool drop_connection_handler(Channel* channel, int sockfd)
 {
-    return channel->close_connection(sockfd);
+    return channel->drop_connection(sockfd);
 }
 
 void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
@@ -197,12 +203,13 @@ void rpc_call_core(Controller* cntl)
     ngxplus::IOBuf* msg = cntl->iobuf();
     msg->read_point_cache();
 
-    int sockfd = common::run_with_pthread_mutex(channel->mutex(), &get_connection_handler, channel);
-    if (sockfd == -1) {
+    int sockfd = common::run_with_pthread_mutex(channel->mutex(), &reuse_connection_handler, channel);
+    if ((sockfd == -1) && ((sockfd = channel->new_connection()) == -1)) {
         cntl->set_result(RPC_INNER_ERROR);
-        cntl->set_result_text("get connect error");
+        cntl->set_result_text("get connection error");
         return cntl->finalize();
     }
+	cntl->set_client_sockfd(sockfd);
 
     char *send_buf;
     char *recv_buf;
@@ -220,7 +227,6 @@ void rpc_call_core(Controller* cntl)
             if (current_send_len < 0) {
                 cntl->set_result(RPC_SEND_ERROR);
                 cntl->set_result_text("send error or timeout");
-                channel->close_connection(sockfd);
                 return cntl->finalize();
             }
             remain_len -= current_send_len;
@@ -244,7 +250,6 @@ void rpc_call_core(Controller* cntl)
             if (current_recv_len < 0) {
                 cntl->set_result(RPC_READ_ERROR);
                 cntl->set_result_text("read error or timeout");
-                channel->close_connection(sockfd);
                 return cntl->finalize();
             }
             if (current_recv_len == 0) {
@@ -252,9 +257,9 @@ void rpc_call_core(Controller* cntl)
             }
             ParseResult parse_result =  default_protocol.parse(cntl, recv_eof);
             if (parse_result == PARSE_DONE) {
-                // run here only if the parse is DONE, otherwise the connection is closed
-                recv_eof ? common::run_with_pthread_mutex(channel->mutex(), &close_connection_handler, channel, sockfd)
-                    : common::run_with_pthread_mutex(channel->mutex(), &release_connection_handler, channel, sockfd);
+                // Immediately release the connection if not recv_eof, else drop it later
+				recv_eof ? : common::run_with_pthread_mutex(channel->mutex(), &release_connection_handler, channel, sockfd);
+				cntl->set_client_recv_eof(recv_eof);
                 // process the response
                 cntl->set_state(RPC_SESSION_PROCESSING);
                 return default_protocol.process_response(cntl);
@@ -265,7 +270,6 @@ void rpc_call_core(Controller* cntl)
                 // error
                 cntl->set_result(RPC_INNER_ERROR);
                 cntl->set_result_text("parse response error");
-                channel->close_connection(sockfd);
                 return cntl->finalize();
             }
         }
@@ -286,7 +290,10 @@ void* rpc_call(void* arg)
         done->Run();
     }
 
-    delete cntl;
+//	if (cntl->iobuf()) {
+//		delete cntl->iobuf();
+//	}
+//    delete cntl;
     return NULL;
 }
 
