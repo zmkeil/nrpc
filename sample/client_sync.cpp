@@ -5,16 +5,6 @@
 
 #include "echo.pb.h"
 
-void print_response(nrpc::Controller* cntl)
-{
-    if (cntl->Failed()) {
-        std::cout << "rpc failed: " << cntl->ErrorText().c_str() << std::endl;
-        return;
-    }
-    nrpc::EchoResponse* resp = static_cast<nrpc::EchoResponse*>(cntl->response());
-    std::cout << resp->res() << std::endl;
-}
-
 int main(int argc, char* argv[])
 {
     if (argc != 2) {
@@ -58,8 +48,6 @@ int main(int argc, char* argv[])
         req_msg[0]++;
     }
 
-    // channel_join guarantees channel destruct after all thread exit
-    channel.channel_join();
     return 0;
 }
 

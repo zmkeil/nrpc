@@ -19,8 +19,8 @@ test/test_service
 
 sample/client
 sample/client_async
+sample/client_sync
 sample/client_connection_reuse
-sample/client_connection_reuse_sync
 sample/server
 sample/server_service_context
 sample/server_connection_reuse

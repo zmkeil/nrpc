@@ -189,40 +189,42 @@ bool drop_connection_handler(Channel* channel, int sockfd);
 void Controller::finalize_client()
 {
     ChannelOperateParams* params = _params;
-	// failed
-    if (Failed()) {
-		// in client side, also drop the connection to avoid dirty data if failed
+    // in client side, also drop the connection to avoid dirty data if failed
+    //   1.failed (rpc frame failed OR context error)
+    //   2.success but recv eof from server
+    //      release is excuted immediately after parese done if not recv eof
+    if (Failed() || _client_recv_eof) {
 		if (_client_sockfd != -1) {
 			common::run_with_pthread_mutex(params->channel->mutex(), &drop_connection_handler, params->channel, _client_sockfd);
 		}
+    }
+
+    // retry only if the rpc frame failed (NOTE: not Failed())
+    if (_result != RPC_OK) {
 		// then retry
         if (params->max_retry_time-- > 0) {
 			// TODO: some wrong,
             if (!_iobuf->read_point_resume()) {
                 set_result(RPC_INNER_ERROR);
                 set_result_text("can't retry (msg resume error)");
-                return;
+            } else {
+                LOG(INFO, "channel retry [remain %d]", params->max_retry_time);
+                set_client_sockfd(-1);
+                set_client_recv_eof(false);
+                set_result(RPC_OK);
+                set_state(RPC_SESSION_SENDING);
+                // still in current pthread, and finally return to rpc_call()
+                return rpc_call_core(this);
             }
-            LOG(INFO, "channel retry [remain %d]", params->max_retry_time);
-			set_client_sockfd(-1);
-			set_client_recv_eof(false);
-            set_result(RPC_OK);
-            set_state(RPC_SESSION_SENDING);
-            // still in current pthread, and finally return to rpc_call()
-            return rpc_call_core(this);
         } else {
 			LOG(INFO, "all retries failed");
 			// maybe here is a appropriate hook
 			params->channel->close_connection();
-			return;
 		}
     }
 
-	// success
-	if (_client_recv_eof) {
-		common::run_with_pthread_mutex(params->channel->mutex(), &drop_connection_handler, params->channel, _client_sockfd);
-		// release is excuted immediately after parese done
-	}
+	// TODO: free resources
+
     return;
 }
 

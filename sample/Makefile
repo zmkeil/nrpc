@@ -60,16 +60,16 @@ objs=echo.pb.o \
 	 server_connection_reuse.o \
 	 client.o \
 	 client_async.o \
-	 client_connection_reuse.o \
-	 client_connection_reuse_sync.o
+	 client_sync.o \
+	 client_connection_reuse.o
 
 testbin=server \
 		server_service_context \
 		server_connection_reuse \
         client \
 		client_async \
-		client_connection_reuse \
-		client_connection_reuse_sync
+		client_sync \
+		client_connection_reuse
 
 .PHONY:all
 all:pb_c $(testbin)
@@ -127,13 +127,13 @@ client_async:client_async.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_async $(LDFLAGS)
 
+client_sync:client_sync.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_sync $(LDFLAGS)
+
 client_connection_reuse:client_connection_reuse.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_connection_reuse $(LDFLAGS)
-
-client_connection_reuse_sync:client_connection_reuse_sync.o echo.pb.o
-	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_connection_reuse_sync $(LDFLAGS)
 
 # obscure rules
 $(filter %.pb.o,$(objs)): %.o: %.cc

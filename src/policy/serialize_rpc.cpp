@@ -222,7 +222,7 @@ void default_process_response(Controller* cntl)
     // release the remian payload
     resp_buf->release_all();
 
-    return;
+    return cntl->finalize();
 }
 
 void default_send_rpc_response(Controller* cntl, bool real_send)
