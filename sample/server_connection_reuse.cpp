@@ -36,6 +36,8 @@ public:
 
 int main()
 {
+	ngxplus::InfoLogContext::set_log_level(WARN);
+
     nrpc::Server server;
     EchoServiceImpl service;
 

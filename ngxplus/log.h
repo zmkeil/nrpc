@@ -2,7 +2,7 @@
 /***********************************************
   File name		: log.h
   Create date	: 2015-12-17 23:12
-  Modified date : 2016-01-04 23:24
+  Modified date : 2016-01-14 11:59
   Author		: zmkeil, alibaba.inc
   Express : 
     Usually, log module is first inited,
