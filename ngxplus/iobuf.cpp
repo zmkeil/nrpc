@@ -98,10 +98,11 @@ int IOBuf::alloc(char** buf)
 
 void IOBuf::reclaim(int count)
 {
-    // the count must GE current block's size
+    // the count must LE current block's size
+	// this is OK in ZeroCopyStream
     long current_block_len = (char*)_pool->current->d.last - _start_points[_blocks - 1];
     if (current_block_len <= count) {
-        LOG(NGX_LOG_LEVEL_ALERT, "reclaim count GE current_block_len");
+        LOG(NGX_LOG_LEVEL_ALERT, "reclaim count GT current_block_len");
         count = current_block_len - 1;
     }
     _pool->current->d.last -= count;
@@ -230,9 +231,31 @@ bool IOBuf::read_point_resume()
 		LOG(NGX_LOG_LEVEL_ALERT, "read point not cached");
 		return false;
 	}
+	// first release all current data
+	release_all();
+	// then copy the origin data to new point, we can't simplly reclaim because that several 
+	// alloc/read operation may be called after last read_point_cache()
+	// this will be a continuely malloc buf.
+	char* read_point_new;
+	if (alloc(&read_point_new, _bytes_record, IOBUF_ALLOC_EXACT) != (int)_bytes_record) {
+		LOG(NGX_LOG_LEVEL_ALERT, "alloc _bytes_record buf failed");
+		return false;
+	}
+	// resume the last cache scene
 	_read_point = _read_point_record;
 	_read_pool = _read_pool_record;
 	_bytes = _bytes_record;
+	// copy data
+	while (_bytes > 0) {
+		const char* read_buf;
+		int read_len = read(&read_buf);
+		memcpy(read_point_new, read_buf, read_len);
+	}
+	// set the new scene
+	_read_point = read_point_new;
+	_read_pool = _pool->current;
+	_bytes = _bytes_record;
+
 	_is_read_point_cached = false;
 	return true;
 }

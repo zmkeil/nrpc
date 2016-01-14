@@ -142,13 +142,14 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
     cntl->set_protocol(NRPC_PROTOCOL_DEFAULT_NUM);
 
     ngxplus::IOBuf* msg = new ngxplus::IOBuf();
+    cntl->set_iobuf(msg);
     int bytes = default_protocol.pack_request(msg, method, cntl, *request);
     if (bytes == -1) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("pack error");
         return cntl->finalize();
     }
-    cntl->set_iobuf(msg);
+	// all the following logic runs in the pthread.
 
     // so channel must be deconstructed after rpc_call
     // In sync mode, this usually is not problem, In async mode, be carefully
@@ -176,6 +177,10 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
 
 bool Channel::channel_join()
 {
+	// just close the dropped connection, the establish connection can be reused
+	// again when launching new rpc_call later
+	close_connection();
+
     int error = 0;
     std::for_each(_async_thread_ids.begin(), _async_thread_ids.end(),
         [&error] (pthread_t& thid) {
