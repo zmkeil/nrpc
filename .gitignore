@@ -26,4 +26,6 @@ sample/server_service_context
 sample/server_connection_reuse
 
 sample/logs/
+sample/yace.sh
+sample/cront.sh
 
