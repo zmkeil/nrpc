@@ -14,6 +14,7 @@
 #include "proto/nrpc_meta.pb.h"
 #include "ngx_nrpc_handler.h"
 #include "channel.h"
+#include "connection_pool.h"
 
 namespace nrpc
 {
@@ -184,7 +185,6 @@ void Controller::finalize_server_connection(ngx_connection_t* c)
 }
 
 void rpc_call_core(Controller* cntl);
-bool drop_connection_handler(Channel* channel, int sockfd);
 
 void Controller::finalize_client()
 {
@@ -195,7 +195,7 @@ void Controller::finalize_client()
     //      release is excuted immediately after parese done if not recv eof
     if (Failed() || _client_recv_eof) {
 		if (_client_sockfd != -1) {
-			common::run_with_pthread_mutex(params->channel->mutex(), &drop_connection_handler, params->channel, _client_sockfd);
+			params->channel->connection_pool()->drop_connection(_client_sockfd);
 		}
     }
 
@@ -219,7 +219,7 @@ void Controller::finalize_client()
         } else {
 			LOG(INFO, "all retries failed");
 			// maybe here is a appropriate hook
-			params->channel->close_connection();
+			params->channel->connection_pool()->close_connection();
 		}
     }
 

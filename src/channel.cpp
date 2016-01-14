@@ -13,120 +13,29 @@ extern "C" {
 #include "controller.h"
 #include "protocol.h"
 #include "channel.h"
+#include "connection_pool.h"
 
 namespace nrpc {
 
-Channel::Channel()
+Channel::Channel() : _option(nullptr), _connection_pool(nullptr)
 {
-    _mutex = PTHREAD_MUTEX_INITIALIZER;
 }
 
 Channel::~Channel()
 {
-    pthread_mutex_destroy(&_mutex);
+    if (_connection_pool) {
+        delete _connection_pool;
+    }
 }
 
 bool Channel::init(const char* server_addr, int port, const ChannelOption* option)
 {
-    _server_ip = server_addr;
-    _server_port = port;
-    _servaddr_len = sizeof(_servaddr);
-    if (!common::sockaddr_init(&_servaddr, _servaddr_len, server_addr, port)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "error ip format \"%s\"", _server_ip);
+    _connection_pool = new ConnectionPool();
+    if (!_connection_pool->init(server_addr, port, option->connection_timeout)) {
         return false;
     }
-
     _option = option;
     return true;
-}
-
-int Channel::new_connection()
-{
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd != -1) {
-		if (!common::connect_with_timeout(sockfd, (struct sockaddr*)&_servaddr,
-					_servaddr_len, _option->connection_timeout)) {
-			sockfd = -1;
-		}
-	}
-
-    LOG(INFO, "new connection [%d]", sockfd);
-    return sockfd;
-}
-
-void Channel::close_connection()
-{
-	while (!_close_connection_queue.empty()) {
-		int sockfd = _close_connection_queue.back();
-		_close_connection_queue.pop_back();
-		LOG(INFO, "close connection [%d]", sockfd);
-		close(sockfd);
-	}
-}
-
-int Channel::reuse_connection()
-{
-    ConnectionMap::iterator it;
-    for (it = _connection_pool.begin(); it != _connection_pool.end(); ++it) {
-        LOG(INFO, "find old connection");
-        ConnectionInfo& cinfo = it->second;
-        if (cinfo.is_idle) {
-            // check if server close, but this can't guarantee that the connection is
-            // still establish when you send data.
-            // So in client side, we should provide retry mechanism
-            int sockfd = it->first;
-            if (!common::is_socket_clear_and_idle(sockfd)) {
-                LOG(INFO, "server already close connection");
-                drop_connection(sockfd);
-            } else {
-                cinfo.is_idle = false;
-                break;
-            }
-        }
-    }
-
-    int sockfd = -1;
-    if (it != _connection_pool.end()) {
-        sockfd = it->first;
-	}
-    LOG(INFO, "reuse connection [%d]", sockfd);
-    return sockfd;
-}
-
-static int reuse_connection_handler(Channel* channel)
-{
-    return channel->reuse_connection();
-}
-
-bool Channel::release_connection(int sockfd)
-{
-    // if sockfd not exists, STL:map will insert a new with default constructor
-	_connection_pool[sockfd].is_idle = true;
-
-    LOG(INFO, "release connection [%d]", sockfd);
-    return true;
-}
-
-static bool release_connection_handler(Channel* channel, int sockfd)
-{
-    return channel->release_connection(sockfd);
-}
-
-bool Channel::drop_connection(int sockfd)
-{
-    LOG(INFO, "drop connection [%d]", sockfd);
-	_close_connection_queue.push_back(sockfd);
-    ConnectionMap::iterator it = _connection_pool.find(sockfd);
-    if (it != _connection_pool.end()) {
-        _connection_pool.erase(it);
-        return true;
-    }
-    return false;
-}
-
-bool drop_connection_handler(Channel* channel, int sockfd)
-{
-    return channel->drop_connection(sockfd);
 }
 
 void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
@@ -179,7 +88,7 @@ bool Channel::channel_join()
 {
 	// just close the dropped connection, the establish connection can be reused
 	// again when launching new rpc_call later
-	close_connection();
+	_connection_pool->close_connection();
 
     int error = 0;
     std::for_each(_async_thread_ids.begin(), _async_thread_ids.end(),
@@ -208,8 +117,8 @@ void rpc_call_core(Controller* cntl)
     ngxplus::IOBuf* msg = cntl->iobuf();
     msg->read_point_cache();
 
-    int sockfd = common::run_with_pthread_mutex(channel->mutex(), &reuse_connection_handler, channel);
-    if ((sockfd == -1) && ((sockfd = channel->new_connection()) == -1)) {
+    int sockfd = channel->connection_pool()->reuse_connection();
+    if ((sockfd == -1) && ((sockfd = channel->connection_pool()->new_connection()) == -1)) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("get connection error");
         return cntl->finalize();
@@ -263,7 +172,7 @@ void rpc_call_core(Controller* cntl)
             ParseResult parse_result =  default_protocol.parse(cntl, recv_eof);
             if (parse_result == PARSE_DONE) {
                 // Immediately release the connection if not recv_eof, else drop it later
-				recv_eof ? : common::run_with_pthread_mutex(channel->mutex(), &release_connection_handler, channel, sockfd);
+				recv_eof ? : channel->connection_pool()->release_connection(sockfd);
 				cntl->set_client_recv_eof(recv_eof);
                 // process the response
                 cntl->set_state(RPC_SESSION_PROCESSING);

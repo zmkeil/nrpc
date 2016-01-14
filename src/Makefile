@@ -41,6 +41,7 @@ objs=ngx_nrpc_module.o \
 	 ngx_nrpc_handler.o \
 	 controller.o \
      channel.o \
+	 connection_pool.o \
 	 server.o \
 	 service_set.o \
      service_context_log.o \
