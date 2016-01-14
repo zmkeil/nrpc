@@ -1,0 +1,52 @@
+This is a protobuf-rpc implement base on nginx.
+Using nginx core/event modules as network framework, and provides simple programming interfaces.
+
+Why Nginx:
+Nginx implements a set of excellent event and network interface. RPC framework written with these interface can be used well in the Internet environment, for example, it can be used as the network layer of mobile app
+
+How to use Nginx:
+In order to guarantee minimum changes to the nginx, the RPC framework acts as a nginx module which will be dynamically added into the nginx module list at initialization time.
+The listen port, protobuf service information which users fill through the programming interface are just the same as configuration parameters of this nginx module. Finally call the main function of nginx(renamed as ngx_start) to start the service.
+And also users can configure the nginx core/event modules with conf/nginx.conf, just the same as Nginx itself.
+
+Features:
+basic RPC functions, such as:
+	1. port configuration
+	2. service add/del
+	3. timeout configuration
+	4. local_session_context, etc.
+some additional features.
+In server side:
+	1. inherited all attributes of nginx core/event module;
+	2. connection keepalive and reuse
+	3. QPS current limit
+In client side: (implement based on pthread)
+	1. provide sync/async mode
+	2. automatic retry mechanism
+	3. connection pool and reuse
+
+How to start:
+first of all, build the libngx.a with follow command. And before that, please read nginx/README
+	cd nginx && ./ngxlib_install.sh your/path/of/nginx && cd ..
+then build the libngxplus.a and libnrpc.a
+	cd ngxplus && make && cd ..
+	cd src && make && cd ..
+now we can programme our app, build with "-lngx -lngxplus -lnrpc", refer to sample/
+
+Additional, some string,network,pthread util function are used, my code tree as follow:
+code-manager:
+	|-common
+	|	|-*.cpp
+	|	`-test
+	|-nrpc
+	|	|-nginx
+	|	|-ngxplus
+	|	|-src
+	|	|-test
+	|	`-sample
+	|-thirdsrc
+		|-gflag
+		`-gtest
+the common module, you can implement youself, or refer to https://github.com/zmkeil/common.git
+
+

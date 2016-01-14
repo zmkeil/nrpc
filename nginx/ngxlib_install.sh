@@ -1,6 +1,10 @@
 #!/bin/bash
 
-NGX_ROOT=/home/zmkeil/nginx/tengine/
+if [ $# != 1 ]; then
+	echo "Usage: $0 your/path/of/nginx"
+	exit -1
+fi
+NGX_ROOT=$1
 tmp_dir=`dirname $0`
 ROOT=`cd ${tmp_dir} && pwd`
 

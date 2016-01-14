@@ -1,0 +1,7 @@
+ngxplus is a simple c++ lib based of nginx.
+The primary components include：
+	1. iobuf
+	2. zero_copy_stream
+	3. log
+	4. open_file
+	5. timer
