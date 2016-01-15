@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-15 09:07
+  Modified date : 2016-01-15 16:13
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -124,7 +124,7 @@ void Controller::SetFailed(const std::string& reason)
 // for server options
 ServiceContext* Controller::service_context()
 {
-    return _server->local_service_context();
+    return _service_context;
 }
 
 int Controller::server_read_timeout()

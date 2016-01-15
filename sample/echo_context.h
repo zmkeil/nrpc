@@ -9,7 +9,7 @@ class EchoContext : public nrpc::ServiceContext
 {
 public:
     // 1.for session local context data
-    EchoContext(std::string* s) : _comments(s), _delimiter(",")
+    EchoContext(std::string* s) : _comments(s), _delimiter("^,")
     {
         _svec.reserve(20);
     }
@@ -25,14 +25,11 @@ public:
     // 2.for service context log
     void set_session_field(const std::string key)
     {
-        //LOG(ALERT, "set_feild: %s", key.c_str());
         _svec.push_back(key);
-        _svec.insert(_svec.begin(), key);
     }
 
     void build_log(std::string* log)
     {
-        //LOG(ALERT, "_svec size: %ld", _svec.size());
         std::for_each(_svec.begin(), _svec.end(),
             [&log, this] (std::string& key) {
                 (*log) += key;

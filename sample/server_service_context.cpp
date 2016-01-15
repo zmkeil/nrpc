@@ -20,8 +20,8 @@ public:
         EchoContext* context = static_cast<EchoContext*>(cntl->service_context());
         response->set_res(request->msg() + " " + *context->comments());
         // 2.log the session local information
-        context->set_session_field(request->msg());
-        context->set_session_field("echo method");
+		context->set_session_field("Recv \"" + request->msg() + "\"");
+        context->set_session_field("Echo \"" + request->msg() + "\"");
 
 		return done->Run();
 	}
