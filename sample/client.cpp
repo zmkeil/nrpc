@@ -40,15 +40,22 @@ int main(int argc, char* argv[])
     // 1.rpc call successly
     stub.Echo(&cntl, &req, &resp, NULL);
     if (cntl.Failed()) {
-        LOG(ALERT, "rpc failed: %s", cntl.ErrorText().c_str());
-        return -1;
+        printf("rpc failed: %s", cntl.ErrorText().c_str());
     }
     std::cout << resp.res() << std::endl;
 
     // 2.rpc call failed
     stub.Reflect(&cntl, &req, &student, NULL);
     if (cntl.Failed()) {
-        LOG(ALERT, "rpc failed: %s", cntl.ErrorText().c_str());
+        printf("rpc failed: %s", cntl.ErrorText().c_str());
+    }
+    std::cout << student.name() << std::endl;
+
+	// 3.rpc method not found at server side
+	//   the server is builded with another echo.proto, !-!
+    stub.Test(&cntl, &req, &student, NULL);
+    if (cntl.Failed()) {
+        printf("rpc failed: %s", cntl.ErrorText().c_str());
     }
     std::cout << student.name() << std::endl;
 

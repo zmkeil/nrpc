@@ -23,6 +23,8 @@ service EchoService {
 	rpc Echo(EchoRequest) returns (EchoResponse);
 
     rpc Reflect(EchoRequest) returns (Student);
+
+	rpc Test(EchoRequest) returns (Student);
 }
 
 option cc_generic_services = true; // ensure generate service code

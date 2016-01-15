@@ -2,7 +2,7 @@
 /***********************************************
   File name		: server.h
   Create date	: 2015-12-02 22:04
-  Modified date : 2016-01-11 23:01
+  Modified date : 2016-01-15 09:08
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -68,6 +68,10 @@ public:
     bool is_connection_reuse();
     int idle_timeout();
     int write_timeout();
+	// concurrency limit is implemented through a simple counter.
+	// because nginx is signal thread, no mutex is needed.
+	bool get_concurrency();
+	void free_concurrency();
     ServiceContext* local_service_context();
 
 private:

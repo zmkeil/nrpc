@@ -90,8 +90,8 @@ ParseResult default_parse_message(Controller* cntl, bool read_eof)
 // and build the default_nrpc_package with (format_describe:meta:body)
 static bool default_nrpc_pack_handle(
         ngxplus::IOBuf* msg,
-        const google::protobuf::Message& rpc_meta, 
-        const google::protobuf::Message& rpc_body)
+        const google::protobuf::Message* rpc_meta, 
+        const google::protobuf::Message* rpc_body)
 {
     msg->release_all();
     char* buf;
@@ -100,7 +100,7 @@ static bool default_nrpc_pack_handle(
     buf += 4;
 
     ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
-    if (!rpc_meta.SerializeToZeroCopyStream(&zero_out_stream)) {
+    if (!rpc_meta->SerializeToZeroCopyStream(&zero_out_stream)) {
         LOG(ALERT, "Failed to serialize rpc_meta in default_nrpc_pack_handle");
         return false;
     }
@@ -108,7 +108,8 @@ static bool default_nrpc_pack_handle(
     *(int32_t*)buf = meta_size;
     buf += 4;
 
-    if (!rpc_body.SerializeToZeroCopyStream(&zero_out_stream)) {
+	// rpc_body may be nullptr, for example: process error in server side
+    if (rpc_body && (!rpc_body->SerializeToZeroCopyStream(&zero_out_stream))) {
         LOG(ALERT, "Failed to serialize rpc_body(req/resp) in default_nrpc_pack_handle");
         return false;
     }
@@ -136,15 +137,30 @@ int default_pack_request(
     req_meta->set_service_name(service->name());
     req_meta->set_method_name(method->name());
 
-    if (!default_nrpc_pack_handle(msg, meta, request)) {
+    if (!default_nrpc_pack_handle(msg, &meta, &request)) {
         return -1;    
     }
     return msg->get_byte_count();
 }
 
 // Actions to a (client) request in nrpc format.
+// run to here means that this request is a good request, so all the errors must use
+// cntl->SetFaild(), and send to client
 void default_process_request(Controller* cntl)
 {
+    google::protobuf::Closure* done = google::protobuf::NewCallback<Controller*>(
+            &default_send_rpc_response, cntl);
+
+	// deal with concurrency limit
+	if (!cntl->get_concurrency()) {
+        cntl->set_result(RPC_PROCESS_ERROR);
+		// for server side log
+		cntl->set_result_text("concurrency limit");
+		// to client
+		cntl->SetFailed("concurrency limit");
+		return done->Run();
+	}
+
     ngxplus::IOBuf* req_buf = cntl->iobuf();
     const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx()));
     const RpcRequestMeta& req_meta = pctx->rpc_meta->request();
@@ -156,7 +172,8 @@ void default_process_request(Controller* cntl)
     if (!method_property) {
         cntl->set_result(RPC_PROCESS_ERROR);
         cntl->set_result_text("rpc method not found");
-        return ngx_nrpc_finalize_session(cntl);
+        cntl->SetFailed("rpc method \"" + req_meta.method_name() + "\" not found");
+        return done->Run();
     }
 
     const google::protobuf::MethodDescriptor* method_descriptor =
@@ -175,7 +192,8 @@ void default_process_request(Controller* cntl)
     if (!req->ParseFromZeroCopyStream(&zero_in_stream)) {
         cntl->set_result(RPC_PROCESS_ERROR);
         cntl->set_result_text("Failed to parse rpc request");
-        return ngx_nrpc_finalize_session(cntl);
+        cntl->SetFailed("Failed to parse rpc request");
+        return done->Run();
     }
     // release the remian payload
     req_buf->carrayon();
@@ -184,9 +202,6 @@ void default_process_request(Controller* cntl)
     // client.options --> req_meta -->server.cntl
     cntl->set_request(req.get());
     cntl->set_response(resp.get());
-
-    google::protobuf::Closure* done = google::protobuf::NewCallback<Controller*>(
-            &default_send_rpc_response, cntl);
 
     return service->CallMethod(method_descriptor, cntl,
             req.release(), resp.release(), done);
@@ -217,7 +232,7 @@ void default_process_response(Controller* cntl)
     }
 
     cntl->set_state(RPC_SESSION_LOGING);
-    // this means rpc frame success
+    // this means rpc frame success, but maybe RPC_SERVICE_FAILED
     cntl->set_result(RPC_OK);
     // release the remian payload
     resp_buf->release_all();
@@ -235,9 +250,10 @@ void default_send_rpc_response(Controller* cntl, bool real_send)
 
     // pack nrpc default packages
     // here resp may be incomplete or error, no matter
-    if (!default_nrpc_pack_handle(iobuf, *rpc_meta, *resp)) {
+    if (!default_nrpc_pack_handle(iobuf, rpc_meta, resp)) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("serialize response pack error");
+		// if pack resp error, don't send it !-!
         return ngx_nrpc_finalize_session(cntl);
     }
     // end of process

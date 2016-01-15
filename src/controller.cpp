@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.cpp
   Create date	: 2015-12-14 01:16
-  Modified date : 2016-01-13 16:16
+  Modified date : 2016-01-15 09:07
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -137,6 +137,16 @@ int Controller::server_write_timeout()
     return _server->write_timeout();
 }
 
+bool Controller::get_concurrency()
+{
+	return _server->get_concurrency();
+}
+
+void Controller::free_concurrency()
+{
+	return _server->free_concurrency();
+}
+
 
 /***************************************
  * for both side
@@ -252,6 +262,9 @@ void Controller::finalize()
         access_log->push_service_context(_service_context);
     }
     access_log->flush();
+
+	// free concurrency
+	free_concurrency();
 
     // close connection, clear timer and event OR keepalive for reuse
     finalize_server_connection(_ngx_connection);

@@ -48,7 +48,7 @@ public:
             google::protobuf::Closure* done);
 
     // do nothing but pthread_join(all thread)
-    bool channel_join();
+    bool channel_join(bool close_all);
 
     // Not implemented yet
     // bool channel_cancel();

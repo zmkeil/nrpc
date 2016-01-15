@@ -24,6 +24,7 @@ sample/client_connection_reuse
 sample/server
 sample/server_service_context
 sample/server_connection_reuse
+sample/server_max_concurrency
 
 sample/logs/
 sample/yace.sh

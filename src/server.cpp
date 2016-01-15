@@ -96,4 +96,18 @@ int Server::write_timeout()
     return _option->write_timeout;
 }
 
+bool Server::get_concurrency()
+{
+	_option->max_concurrency--;
+	if (_option->max_concurrency >= 0) {
+		return true;
+	}
+	return false;
+}
+
+void Server::free_concurrency()
+{
+	_option->max_concurrency++;
+}
+
 }

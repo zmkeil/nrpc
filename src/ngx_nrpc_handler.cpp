@@ -231,7 +231,10 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
         // n == size, read next
     }
     // send all to tcp buf
-    cntl->set_result(RPC_OK);
+	// Don't set RPC_OK, _result inited by RPC_OK, but in the processing procedure
+	// it may be seted to be RPC_PROCESS_ERROR, we also need to send the resp, and
+	// log this error
+    //cntl->set_result(RPC_OK);
     cntl->set_state(RPC_SESSION_LOGING);
     cntl->set_end_time_us(ngxplus::Timer::rawtime_us());
     return ngx_nrpc_finalize_session(cntl);

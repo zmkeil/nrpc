@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.h
   Create date	: 2015-12-02 23:47
-  Modified date : 2016-01-13 16:04
+  Modified date : 2016-01-15 09:04
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -156,6 +156,8 @@ public:
     ServiceContext* service_context();
     int server_read_timeout();
     int server_write_timeout();
+	bool get_concurrency();
+	void free_concurrency();
 
 
     // -------------------------------------------------------------------

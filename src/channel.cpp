@@ -84,11 +84,11 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
     }
 }
 
-bool Channel::channel_join()
+bool Channel::channel_join(bool close_all)
 {
 	// just close the dropped connection, the establish connection can be reused
 	// again when launching new rpc_call later
-	_connection_pool->close_connection();
+	_connection_pool->close_connection(close_all);
 
     int error = 0;
     std::for_each(_async_thread_ids.begin(), _async_thread_ids.end(),

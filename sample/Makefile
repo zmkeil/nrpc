@@ -58,6 +58,7 @@ objs=echo.pb.o \
 	 server.o \
 	 server_service_context.o \
 	 server_connection_reuse.o \
+	 server_max_concurrency.o \
 	 client.o \
 	 client_async.o \
 	 client_sync.o \
@@ -66,6 +67,7 @@ objs=echo.pb.o \
 testbin=server \
 		server_service_context \
 		server_connection_reuse \
+		server_max_concurrency \
         client \
 		client_async \
 		client_sync \
@@ -118,6 +120,10 @@ server_service_context:server_service_context.o echo.pb.o
 server_connection_reuse:server_connection_reuse.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_connection_reuse $(LDFLAGS)
+
+server_max_concurrency:server_max_concurrency.o echo.pb.o
+	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_max_concurrency $(LDFLAGS)
 
 client:client.o echo.pb.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"

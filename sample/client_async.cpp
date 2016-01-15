@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     }
 
     // channel_join guarantees channel destruct after all thread exit
-    channel.channel_join();
+    channel.channel_join(true);
     return 0;
 }
 
