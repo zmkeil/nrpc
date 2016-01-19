@@ -7,12 +7,12 @@
 #include "iobuf_zero_copy_stream.h"
 #include "service_set.h"
 #include "server.h"
-#include "proto/nrpc_meta.pb.h"
 
 namespace nrpc
 {
 
 class Controller;
+class RpcMeta;
 
 enum ParseResult {
     // bad package format

@@ -1,12 +1,10 @@
 #ifndef NGXPLUS_IOBUF_H
 #define NGXPLUS_IOBUF_H
 
-extern "C" {
-#include <ngx_config.h>
-#include <ngx_core.h>
-#include <ngx_log.h>
-}
 #include "common.h"
+
+struct ngx_pool_s;
+typedef struct ngx_pool_s ngx_pool_t;
 
 namespace ngxplus {
 

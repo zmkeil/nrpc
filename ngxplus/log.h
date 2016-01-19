@@ -2,7 +2,7 @@
 /***********************************************
   File name		: log.h
   Create date	: 2015-12-17 23:12
-  Modified date : 2016-01-14 11:59
+  Modified date : 2016-01-19 17:43
   Author		: zmkeil, alibaba.inc
   Express : 
     Usually, log module is first inited,
@@ -12,12 +12,7 @@
 #ifndef NGXPLUS_LOG_H
 #define NGXPLUS_LOG_H
 
-extern "C" {
-#include <ngx_config.h>
-#include <ngx_core.h>
-#include <ngx_log.h>
-}
-#include "common.h"
+#include <string>
 
 namespace ngxplus {
 
@@ -51,7 +46,7 @@ public:
     void comlog_write_core(int level, const char* fmt, va_list args);
 
 private:
-    ngx_open_file_t _file;
+    int _fd;
     int _level;
 
 private:

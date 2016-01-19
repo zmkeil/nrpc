@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include "ngx_nrpc_module.h"
+//#include "ngx_nrpc_module.h"
 #include "server.h"
 #include "controller.h"
 #include "info_log_context.h"

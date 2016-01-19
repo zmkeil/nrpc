@@ -2,7 +2,7 @@
 /***********************************************
   File name		: log.cpp
   Create date	: 2015-12-17 23:28
-  Modified date : 2015-12-18 01:47
+  Modified date : 2016-01-19 17:29
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -38,7 +38,7 @@ static const char *err_levels[] = {
 
 bool Log::init()
 {
-    _file.fd = ngx_stderr;
+    _fd = ngx_stderr;
     _level = 0;
     return true;
 }
@@ -53,9 +53,9 @@ bool Log::init(const std::string& log_name)
     std::string file_name(LOG_PATH);
     file_name.append(log_name);
 
-    _file.fd = ngx_open_file(file_name.c_str(), NGX_FILE_APPEND,
+    _fd = ngx_open_file(file_name.c_str(), NGX_FILE_APPEND,
             NGX_FILE_CREATE_OR_OPEN, NGX_FILE_DEFAULT_ACCESS);
-    if (_file.fd == NGX_INVALID_FILE) {
+    if (_fd == NGX_INVALID_FILE) {
         ngx_log_stderr(0, "[alert] could not open error log file: \"%s\"",
                 file_name.c_str());
         return false;
@@ -100,7 +100,7 @@ void Log::comlog_write_core(int level, const char* fmt, va_list args)
 
     ngx_linefeed(p);
 
-    (void) ngx_write_fd(_file.fd, errstr, p - errstr);
+    (void) ngx_write_fd(_fd, errstr, p - errstr);
     return;
 }
 

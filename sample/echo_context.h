@@ -3,7 +3,6 @@
 
 #include <algorithm>
 #include "service_context.h"
-#include "service_context_log.h"
 
 class EchoContext : public nrpc::ServiceContext
 {

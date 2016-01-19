@@ -9,11 +9,6 @@
  **********************************************/
 #ifndef NRPC_SERVER_H
 #define NRPC_SERVER_H
-extern "C" {
-#include <ngx_config.h>
-#include <ngx_core.h>
-#include <nginx.h>
-}
 #include <vector>
 #include <string>
 #include "service_set.h"

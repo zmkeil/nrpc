@@ -5,6 +5,7 @@
 #include "protocol.h"
 #include "controller.h"
 #include "ngx_nrpc_handler.h"
+#include "proto/nrpc_meta.pb.h"
 
 namespace nrpc
 {

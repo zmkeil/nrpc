@@ -34,6 +34,7 @@ INCPATH=-I. \
   -I../../common/
 
 objs=open_file.o \
+	 timer.o \
      log.o \
      info_log_context.o \
      iobuf.o \

@@ -2,12 +2,16 @@
 /***********************************************
   File name		: server.cpp
   Create date	: 2015-12-02 22:46
-  Modified date : 2015-12-31 02:30
+  Modified date : 2016-01-19 17:18
   Author		: zmkeil, alibaba.inc
   Express : 
   
  **********************************************/
 
+extern "C" {
+#include <nginx.h>
+#include <ngx_core.h>
+}
 #include <iostream>
 #include "server.h"
 #include "service_set.h"

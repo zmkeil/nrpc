@@ -1,6 +1,7 @@
 #ifndef NGXPLUS_INFO_LOG_CONTEXT
 #define NGXPLUS_INFO_LOG_CONTEXT
 
+#include <stdarg.h>
 #include "log.h"
 #include "timer.h"
 
@@ -11,7 +12,7 @@
 
 #define LOG(_level_, _fmt_, args...)                                        \
     ngxplus::InfoLogContext::get_context()->log(_level_, "%s [%s:%d][%s] "  \
-            _fmt_, ngxplus::Timer::asctime(), __FILE__, __LINE__,  \
+            _fmt_, ngxplus::asctime(), __FILE__, __LINE__,  \
             __FUNCTION__, ##args)                                           \
 
 namespace ngxplus {

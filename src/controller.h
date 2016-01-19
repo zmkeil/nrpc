@@ -2,7 +2,7 @@
 /***********************************************
   File name		: controller.h
   Create date	: 2015-12-02 23:47
-  Modified date : 2016-01-15 09:04
+  Modified date : 2016-01-19 17:23
   Author		: zmkeil, alibaba.inc
   Express : 
   
@@ -11,10 +11,6 @@
 #ifndef NRPC_CONTROLLER_H
 #define NRPC_CONTROLLER_H
 
-extern "C" {
-#include <nginx.h>
-#include <ngx_core.h>
-}
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
 #include "iobuf_zero_copy_stream.h"
@@ -23,6 +19,9 @@ extern "C" {
 #include "protocol.h"
 #include "service_context.h"
 #include "info_log_context.h"
+
+struct ngx_connection_s;
+typedef struct ngx_connection_s ngx_connection_t;
 
 namespace nrpc
 {

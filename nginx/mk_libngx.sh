@@ -21,7 +21,7 @@ echo ""
 
 cd objs
 echo "modify objs/Makefile and objs/ngx_modules.c"
-sed -i 's/-Werror //g' ./Makefile
+sed -i 's/-Werror/-Werror -fPIC/g' ./Makefile
 sed -i 's/objs\/nginx:	objs/objs\/libngx.a:	objs/g' ./Makefile
 sed -i 's/LINK =.*/AR = ar -rcs/g' ./Makefile
 sed -i 's/LINK/AR/g' ./Makefile

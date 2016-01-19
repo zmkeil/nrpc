@@ -26,26 +26,15 @@ CPPFLAGS=-g \
   -D__const__=
 #  -Werror 
 INCPATH=-I. \
-  -I./include \
-  -I../src/ \
-  -I../src/policy/ \
-  -I../src/policy/proto \
-  -I../nginx/include/objs/ \
-  -I../nginx/include/core/ \
-  -I../nginx/include/event/ \
-  -I../nginx/include/event/modules/ \
-  -I../nginx/include/os/unix/ \
-  -I../nginx/include/proc/ \
-  -I../ngxplus/ \
+  -I./include/ \
+  -I../output/include/ \
   -I../../common/
-LIBPATH=-L/usr/local/lib \
+LIBPATH=-L/usr/local/lib/ \
   -L. \
-  -L../src/ \
-  -L../nginx/lib/ \
-  -L../ngxplus/ \
+  -L../output/lib/ \
   -L../../common/
 #LDFLAGS=-Xlinker "-(" -lngxplus -lngx -lnrpc -Xlinker "-)" -lprotobuf -lpthread -lssl -lcrypto -ldl
-LDFLAGS=-lnrpc -lngxplus -lngx -lcommon -lprotobuf -lpthread -lssl -lcrypto -ldl
+LDFLAGS=-lngxrpc -lprotobuf -lpthread -lssl -lcrypto -ldl
 
 
 # ##########
