@@ -1,7 +1,10 @@
 #ifndef NGXPLUS_IOBUF_H
 #define NGXPLUS_IOBUF_H
 
-#include "common.h"
+extern "C" {
+#include "stdio.h"
+}
+#include <string>
 
 struct ngx_pool_s;
 typedef struct ngx_pool_s ngx_pool_t;

@@ -1,3 +1,4 @@
+#include <common.h>
 #include "iobuf.h"
 
 inline void info_string(std::string& str)

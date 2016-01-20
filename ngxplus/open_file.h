@@ -6,7 +6,7 @@ extern "C" {
 #include <ngx_core.h>
 #include <ngx_log.h>
 }
-#include "common.h"
+#include "common_head.h"
 
 namespace ngxplus {
 

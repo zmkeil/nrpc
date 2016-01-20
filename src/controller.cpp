@@ -92,8 +92,8 @@ std::string Controller::ErrorText() const
  **************************************/
 bool Controller::server_side_init(ngx_connection_t* c)
 {
-    _start_time_s = ngxplus::Timer::rawtime();
-    _start_time_us = ngxplus::Timer::rawtime_us();
+    _start_time_s = ngxplus::rawtime();
+    _start_time_us = ngxplus::rawtime_us();
     _ngx_connection = c;
     _service_set = (ServiceSet*)_ngx_connection->listening->servers;
     _server = _service_set->server();

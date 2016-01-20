@@ -177,7 +177,7 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
                 ngx_del_timer(rev);
             }
             cntl->set_state(RPC_SESSION_PROCESSING);
-            cntl->set_start_process_time_us(ngxplus::Timer::rawtime_us());
+            cntl->set_start_process_time_us(ngxplus::rawtime_us());
             return protocol->process_request(cntl);
         }
         else if (presult == PARSE_INCOMPLETE) {
@@ -236,7 +236,7 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
 	// log this error
     //cntl->set_result(RPC_OK);
     cntl->set_state(RPC_SESSION_LOGING);
-    cntl->set_end_time_us(ngxplus::Timer::rawtime_us());
+    cntl->set_end_time_us(ngxplus::rawtime_us());
     return ngx_nrpc_finalize_session(cntl);
 }
 

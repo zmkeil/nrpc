@@ -40,7 +40,7 @@ objs=../common/libcommon.a \
 
 
 .PHONY:all
-all:install
+all:install test sample
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40mall[0m']"
 	@echo "make all done"
 
@@ -111,6 +111,14 @@ install:${LIBS} ${INCS}
 	mkdir -p output/include
 	mv libngxrpc.a libngxrpc.so output/lib/
 	cp ${INCS} output/include
+
+test:install
+	@echo "[[1;32;40mbuild test[0m]"
+	make -C test
+
+sample:install
+	@echo "[[1;32;40mbuild sample[0m]"
+	make -C sample
 
 endif #ifeq ($(shell uname -m),x86_64)
 

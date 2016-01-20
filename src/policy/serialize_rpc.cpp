@@ -258,7 +258,7 @@ void default_send_rpc_response(Controller* cntl, bool real_send)
         return ngx_nrpc_finalize_session(cntl);
     }
     // end of process
-    cntl->set_end_process_time_us(ngxplus::Timer::rawtime_us());
+    cntl->set_end_process_time_us(ngxplus::rawtime_us());
     cntl->set_state(RPC_SESSION_SENDING);
     // if (!real_send), return without finalize, just for test
 

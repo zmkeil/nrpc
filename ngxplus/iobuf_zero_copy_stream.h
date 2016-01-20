@@ -3,7 +3,7 @@
 
 #include <google/protobuf/io/zero_copy_stream.h>
 #include <google/protobuf/stubs/common.h>
-#include <common.h>
+#include <common_head.h>
 #include "iobuf.h"
 
 namespace ngxplus {
