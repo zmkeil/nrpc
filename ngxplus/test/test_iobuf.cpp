@@ -1,5 +1,5 @@
-#include <common.h>
-#include "iobuf.h"
+#include <iostream>
+#include "ngxplus_iobuf.h"
 
 inline void info_string(std::string& str)
 {
@@ -8,21 +8,24 @@ inline void info_string(std::string& str)
 
 int main()
 {
-    ngxplus::IOBuf iobuf(768);
+    ngxplus::NgxplusIOBuf iobuf(768);
     char* buf;
 
-    ssize_t size = iobuf.alloc(&buf, 300, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
+    ssize_t size = iobuf.alloc(&buf, 300, common::IOBUF_ALLOC_EXACT);
     std::cout << "palloc size: " << size << std::endl;
     memset(buf, 'a', size);
+    iobuf.print_info();
+    iobuf.print_payload(2048);
 
-    size = iobuf.alloc(&buf, 512, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
+    size = iobuf.alloc(&buf, 512, common::IOBUF_ALLOC_EXACT);
     std::cout << "palloc size: " << size << std::endl;
     memset(buf, 'b', size);
+    iobuf.print_info();
+    iobuf.print_payload(2048);
 
-    size = iobuf.alloc(&buf, 512, ngxplus::IOBuf::IOBUF_ALLOC_SIMILAR);
+    size = iobuf.alloc(&buf, 512, common::IOBUF_ALLOC_SIMILAR);
     std::cout << "palloc size: " << size << std::endl;
     memset(buf, 'c', size);
-
     iobuf.print_info();
     iobuf.print_payload(2048);
 

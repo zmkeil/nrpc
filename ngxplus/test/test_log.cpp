@@ -1,24 +1,19 @@
-#include "log.h"
-#include "info_log_context.h"
+#include <comlog/info_log_context.h>
+#include "ngxplus_log.h"
 
 int main()
 {
-    const char* name = "zmkeil";
-    const char* hello = "hello";
+    LOG(ALERT, "test log with stderr_log");
 
-    ngxplus::Log log;
-    log.init("t1.log");
+    ngxplus::NgxplusLog* log1 = new ngxplus::NgxplusLog();
+    log1->init();
+    common::InfoLogContext::set_log((common::AbstractLog*)log1);
+    LOG(NOTICE, "test log with ngxplus_log");
 
-    ngxplus::Log log2;
-    log2.init("t1.log");
-
-    log.comlog_write(0, "hello %s", name);
-
-    log2.comlog_write(0, "world %s", hello);
-
-    ngxplus::InfoLogContext::get_context()->log(NGX_LOG_LEVEL_EMERG, "info_log_context");
-
-    LOG(NGX_LOG_LEVEL_ALERT, "MACRO LOG");
+    ngxplus::NgxplusLog* log2 = new ngxplus::NgxplusLog();
+    log2->init("test_error.log");
+    common::InfoLogContext::set_log((common::AbstractLog*)log2);
+    LOG(NOTICE, "test log with ngxplus_log");
 
     return 0;
 }

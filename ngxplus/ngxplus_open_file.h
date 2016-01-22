@@ -2,9 +2,8 @@
 #define NGXPLUS_FILE
 
 extern "C" {
-#include <ngx_config.h>
+//#include <ngx_config.h>
 #include <ngx_core.h>
-#include <ngx_log.h>
 }
 #include "common_head.h"
 

@@ -8,8 +8,8 @@
   
  **********************************************/
 
-#include "info_log_context.h"
-#include "timer.h"
+#include <comlog/info_log_context.h>
+#include "ngxplus_timer.h"
 
 int main()
 {

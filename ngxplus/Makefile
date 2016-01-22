@@ -33,12 +33,10 @@ INCPATH=-I. \
   -I../nginx/include/proc/ \
   -I../../common/
 
-objs=open_file.o \
-	 timer.o \
-     log.o \
-     info_log_context.o \
-     iobuf.o \
-     iobuf_zero_copy_stream.o
+objs=ngxplus_open_file.o \
+     ngxplus_log.o \
+	 ngxplus_timer.o \
+     ngxplus_iobuf.o
 
 .PHONY:all
 all:libngxplus.a UT

@@ -1,4 +1,5 @@
-#include "iobuf_zero_copy_stream.h"
+#include <io/iobuf_zero_copy_stream.h>
+#include "ngxplus_iobuf.h"
 
 int main()
 {
@@ -9,8 +10,8 @@ int main()
 
 
 /* first alloc some data */
-    ngxplus::IOBuf iobuf;
-    ngxplus::IOBufAsZeroCopyOutputStream zero_copy_out(&iobuf);
+    ngxplus::NgxplusIOBuf iobuf(1024);
+    common::IOBufAsZeroCopyOutputStream zero_copy_out(&iobuf);
     if (!zero_copy_out.Next((void**)&buf, &size)) {
         std::cout << "next error" << std::endl;
         return -1;
@@ -23,7 +24,7 @@ int main()
 
 /* consume the data */
 	iobuf.read_point_cache();
-    ngxplus::IOBufAsZeroCopyInputStream zero_copy_in(&iobuf);
+    common::IOBufAsZeroCopyInputStream zero_copy_in(&iobuf);
     if (!zero_copy_in.Next((const void**)&buf_in, &size)) {
         std::cout << "in next error" << std::endl;
         return -1;

@@ -8,12 +8,12 @@
   
  **********************************************/
 
+#include <time.h>
 extern "C" {
 #include <nginx.h>
+#include <ngx_core.h>
 }
-#include "common.h"
-#include "time.h"
-#include "timer.h"
+#include "ngxplus_timer.h"
 
 namespace ngxplus {
 
@@ -38,7 +38,7 @@ char* asctime()
 	timeinfo = ::localtime(&raw);
 	// result point to a static mem
 	result = ::asctime(timeinfo);
-	result[strlen(result)-1] = '\0';
+	result[strlen(result)-1] = ' ';
 	return result;
 }
 
