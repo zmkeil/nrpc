@@ -47,6 +47,8 @@ bool NgxplusIOBuf::alloc_next_block()
             return false;
         }
     }
+
+    reclaim_to_current_block(_block_size);
     return true;
 }
 
@@ -56,7 +58,7 @@ bool NgxplusIOBuf::is_current_block_buf_enough(size_t size, common::IOBufAllocTy
     if ((type == common::IOBUF_ALLOC_SIMILAR) && (remain_buf_size > 0)) {
         return true;
     }
-    else if ((type == common::IOBUF_ALLOC_EXACT) && (remain_buf_size <= size)) {
+    else if ((type == common::IOBUF_ALLOC_EXACT) && (remain_buf_size >= size)) {
         return true;
     }
     return false;
@@ -80,7 +82,6 @@ char* NgxplusIOBuf::alloc_from_current_block(size_t n)
 bool NgxplusIOBuf::reclaim_to_current_block(size_t n)
 {
     _pool->current->d.last -= n;
-    _bytes -= n;
     return true;
 }
 
@@ -92,8 +93,7 @@ void NgxplusIOBuf::move_read_point_to_next_block()
 
 size_t NgxplusIOBuf::current_block_remain_data_size()
 {
-    return std::min((size_t)((char*)_read_pool->d.last - _read_point), _bytes);
-
+    return std::min((size_t)((char*)_read_pool->d.last - _read_point), get_byte_count());
 }
 
 size_t NgxplusIOBuf::current_block_consume_data_size()
@@ -161,7 +161,7 @@ void NgxplusIOBuf::dump_info(std::string* info)
         p = p->d.next;
     }
     common::string_appendf(info, "_read_point = %p\n", _read_point);
-    common::string_appendf(info, "bytes = %zu\n", _bytes);
+    common::string_appendf(info, "bytes = %zu\n", get_byte_count());
 }
 
 void NgxplusIOBuf::print_info(size_t capacity)

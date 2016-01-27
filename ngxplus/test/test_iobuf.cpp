@@ -1,3 +1,4 @@
+#include <string.h>
 #include <iostream>
 #include "ngxplus_iobuf.h"
 
