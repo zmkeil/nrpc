@@ -21,9 +21,10 @@ bool NgxplusIOBuf::init_pool()
 		return -1;
 	}
 
-    _start_points[_blocks++] = (char*)ngx_pnalloc(_pool, 0);
-    _read_point = _start_points[0];
-	_read_pool = _pool;
+    _read_point = (char*)ngx_pnalloc(_pool, 0);
+    _blocks = 1;
+
+    _start_points[_blocks - 1] = _read_point;
     return true;
 }
 
@@ -32,7 +33,7 @@ bool NgxplusIOBuf::alloc_next_block()
     char* buf;
     // use ngx_pnalloc instead of ngx_palloc, ignore align
     buf = (char*)ngx_pnalloc(_pool, _block_size);
-    if (!(*buf)) {
+    if (!buf) {
         LOG(WARN, "ngx_pnalloc [blocks=%lu] failed", _blocks);
         return false;
     }
@@ -40,13 +41,19 @@ bool NgxplusIOBuf::alloc_next_block()
     // ensure data to be stored in series
     if (_pool->current->d.next) {
         _pool->current = _pool->current->d.next;
-        _start_points[_blocks++] = buf;
-        if (_blocks > IOBUF_MAX_BLOCKS_NUM) {
-            LOG(WARN, "_blocks GT IOBUF_MAX_BLOCKS_NUM"
-                    "try to increase _block_size [%lu]", _block_size);
-            return false;
-        }
+    } else {
+        LOG(ALERT, "alloc in the current block when alloc_next_block");
+        return false;
     }
+
+    _blocks++;
+    if (_blocks > IOBUF_MAX_BLOCKS_NUM) {
+        LOG(WARN, "_blocks GT IOBUF_MAX_BLOCKS_NUM"
+                "try to increase _block_size [%lu]", _block_size);
+        return false;
+    }
+
+    _start_points[_blocks - 1] = buf;
 
     reclaim_to_current_block(_block_size);
     return true;
@@ -87,13 +94,30 @@ bool NgxplusIOBuf::reclaim_to_current_block(size_t n)
 
 void NgxplusIOBuf::move_read_point_to_next_block()
 {
-    _read_pool = _read_pool->d.next;
     _read_point = _start_points[++_read_block];
+}
+
+static ngx_pool_t* get_current_read_pool(ngx_pool_t* root, int read_block)
+{
+    ngx_pool_t* pool = root;
+    while(read_block > 0) {
+        pool = pool->d.next;
+        if (!pool) {
+            LOG(ALERT, "_read_block is GT actual count of blocks");
+            return NULL;
+        }
+        read_block--;
+    }
+    return pool;
 }
 
 size_t NgxplusIOBuf::current_block_remain_data_size()
 {
-    return std::min((size_t)((char*)_read_pool->d.last - _read_point), get_byte_count());
+    ngx_pool_t* current_read_pool = get_current_read_pool(_pool, _read_block);
+    if (!current_read_pool) {
+        return 0;
+    }
+    return std::min((size_t)((char*)current_read_pool->d.last - _read_point), get_byte_count());
 }
 
 size_t NgxplusIOBuf::current_block_consume_data_size()

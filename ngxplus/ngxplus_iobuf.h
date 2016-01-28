@@ -11,7 +11,6 @@ class NgxplusIOBuf : public common::AbstractIOBuf
 public:
 	NgxplusIOBuf(size_t block_size) : AbstractIOBuf(block_size) {
         _pool = nullptr;
-        _read_pool = nullptr;
         memset(_start_points, 0, sizeof(char*) * IOBUF_MAX_BLOCKS_NUM);
     }
 	virtual ~NgxplusIOBuf() {}
@@ -27,7 +26,7 @@ public:
     void dump_info(std::string* info);// {(void) info;}
     void print_info(size_t capacity);// {(void) capacity;}
     void print_info();// {print_info(1024);}
-	
+
 protected:
 	bool init_pool();
 
@@ -47,7 +46,6 @@ private:
 
 private:
     ngx_pool_t* _pool;
-    ngx_pool_t* _read_pool;
     char* _start_points[IOBUF_MAX_BLOCKS_NUM];
 };
 

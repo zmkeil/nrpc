@@ -18,7 +18,7 @@ int main()
     iobuf.print_info();
     iobuf.print_payload(2048);
 
-    size = iobuf.alloc(&buf, 512, common::IOBUF_ALLOC_EXACT);
+    size = iobuf.alloc(&buf, 712, common::IOBUF_ALLOC_EXACT);
     std::cout << "palloc size: " << size << std::endl;
     memset(buf, 'b', size);
     iobuf.print_info();
