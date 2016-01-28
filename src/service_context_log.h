@@ -1,7 +1,7 @@
 #ifndef NRPC_SERVICE_CONTEXT_LOG_H
 #define NRPC_SERVICE_CONTEXT_LOG_H
 
-#include "log.h"
+#include "ngxplus_log.h"
 #include "controller.h"
 
 namespace nrpc {
@@ -38,7 +38,7 @@ public:
 
 private:
     ServiceContextLog() {
-        _log.init(SERVICE_LOG_NAME_DEFAULT, DEBUG);
+        _log.init(SERVICE_LOG_NAME_DEFAULT);
         _log_content.reserve(SERVER_LOG_MAX_LEN);
         _log_content.clear();
     }
@@ -46,7 +46,7 @@ private:
     void insert_delimiter();
 
 private:
-    ngxplus::Log _log;
+    ngxplus::NgxplusLog _log;
     // ngx core is single thread, so this is safe
     std::string _log_content;
 

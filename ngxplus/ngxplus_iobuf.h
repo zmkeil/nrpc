@@ -1,3 +1,5 @@
+#ifndef NGXPLUS_IOBUF_H
+#define NGXPLUS_IOBUF_H
 
 #include "io/abstract_iobuf.h"
 
@@ -13,11 +15,11 @@ public:
         _pool = nullptr;
         memset(_start_points, 0, sizeof(char*) * IOBUF_MAX_BLOCKS_NUM);
     }
+	NgxplusIOBuf() : AbstractIOBuf(1024) {
+        _pool = nullptr;
+        memset(_start_points, 0, sizeof(char*) * IOBUF_MAX_BLOCKS_NUM);
+    }
 	virtual ~NgxplusIOBuf() {}
-
-/* store and resume the read point at one time */
-	void read_point_cache() {}
-	bool read_point_resume() {return true;}
 
 /* dump and print the infomation or payload */
     void dump_payload(std::string* payload);// {(void) payload;}
@@ -50,3 +52,5 @@ private:
 };
 
 }
+
+#endif

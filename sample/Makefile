@@ -51,7 +51,8 @@ objs=echo.pb.o \
 	 client.o \
 	 client_async.o \
 	 client_sync.o \
-	 client_connection_reuse.o
+	 client_connection_reuse.o \
+	 util.o
 
 testbin=server \
 		server_service_context \
@@ -98,35 +99,35 @@ pb_c:
 	done
 
 # UT
-server:server.o echo.pb.o
+server:server.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server $(LDFLAGS)
 
-server_service_context:server_service_context.o echo.pb.o
+server_service_context:server_service_context.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_service_context $(LDFLAGS)
 
-server_connection_reuse:server_connection_reuse.o echo.pb.o
+server_connection_reuse:server_connection_reuse.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_connection_reuse $(LDFLAGS)
 
-server_max_concurrency:server_max_concurrency.o echo.pb.o
+server_max_concurrency:server_max_concurrency.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o server_max_concurrency $(LDFLAGS)
 
-client:client.o echo.pb.o
+client:client.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client $(LDFLAGS)
 
-client_async:client_async.o echo.pb.o
+client_async:client_async.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_async $(LDFLAGS)
 
-client_sync:client_sync.o echo.pb.o
+client_sync:client_sync.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_sync $(LDFLAGS)
 
-client_connection_reuse:client_connection_reuse.o echo.pb.o
+client_connection_reuse:client_connection_reuse.o echo.pb.o util.o
 	@echo "[[1;32;40mCOMAKE:BUILD[0m][Target:'[1;32;40m$@[0m']"
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LIBPATH) $^ -o client_connection_reuse $(LDFLAGS)
 

@@ -1,5 +1,5 @@
-#ifndef NGXPLUS_FILE
-#define NGXPLUS_FILE
+#ifndef NGXPLUS_OPEN_FILE
+#define NGXPLUS_OPEN_FILE
 
 extern "C" {
 //#include <ngx_config.h>

@@ -8,8 +8,11 @@ extern "C" {
 }
 #include <iostream>
 #include <algorithm>
-#include <common.h>
-#include "info_log_context.h"
+#include <common_head.h>
+#include <network_util.h>
+#include <comlog/info_log_context.h>
+#include <io/iobuf_zero_copy_stream.h>
+#include <ngxplus_iobuf.h>
 #include "controller.h"
 #include "protocol.h"
 #include "channel.h"
@@ -50,7 +53,7 @@ void Channel::CallMethod(const google::protobuf::MethodDescriptor* method,
     cntl->set_response(response);
     cntl->set_protocol(NRPC_PROTOCOL_DEFAULT_NUM);
 
-    ngxplus::IOBuf* msg = new ngxplus::IOBuf();
+    ngxplus::NgxplusIOBuf* msg = new ngxplus::NgxplusIOBuf();
     cntl->set_iobuf(msg);
     int bytes = default_protocol.pack_request(msg, method, cntl, *request);
     if (bytes == -1) {
@@ -114,7 +117,7 @@ void rpc_call_core(Controller* cntl)
 {
     ChannelOperateParams* params = cntl->channel_operate_params();
     Channel* channel = params->channel;
-    ngxplus::IOBuf* msg = cntl->iobuf();
+    ngxplus::NgxplusIOBuf* msg = cntl->iobuf();
     msg->read_point_cache();
 
     int sockfd = channel->connection_pool()->reuse_connection();
@@ -129,7 +132,7 @@ void rpc_call_core(Controller* cntl)
     char *recv_buf;
     int size;
     int remain_len;
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(msg);
+    common::IOBufAsZeroCopyInputStream zero_in_stream(msg);
     while (zero_in_stream.Next((const void**)&send_buf, &size)) {
         if (size == 0) {
             continue;
@@ -152,7 +155,7 @@ void rpc_call_core(Controller* cntl)
     cntl->set_state(RPC_SESSION_READING);
 
     bool recv_eof = false;
-    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
+    common::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
     while (zero_out_stream.Next((void**)&recv_buf, &size)) {
         if (size == 0) {
             continue;

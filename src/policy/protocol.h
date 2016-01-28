@@ -4,7 +4,7 @@
 #include <google/protobuf/service.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
-#include "iobuf_zero_copy_stream.h"
+#include <ngxplus_iobuf.h>
 #include "service_set.h"
 #include "server.h"
 
@@ -31,7 +31,7 @@ enum ParseResult {
 typedef ParseResult (*Parse)(Controller* cntl, bool read_eof);
 
 typedef int (*PackRequest)(
-        ngxplus::IOBuf* msg,
+        ngxplus::NgxplusIOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
         Controller* cntl, const google::protobuf::Message& request);
 

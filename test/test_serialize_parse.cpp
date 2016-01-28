@@ -9,9 +9,10 @@
  **********************************************/
 #include <iosfwd>
 #include <google/protobuf/text_format.h>
-#include "common.h"
-#include "info_log_context.h"
-#include "iobuf_zero_copy_stream.h"
+#include <common_head.h>
+#include <comlog/info_log_context.h>
+#include <io/iobuf_zero_copy_stream.h>
+#include <ngxplus_iobuf.h>
 #include "echo.pb.h"
 
 int main()
@@ -28,15 +29,15 @@ int main()
     student.set_home_address("js-yangzhou-jd-zhaoguan-zhaoqi");
     student.set_phone("18668151282");
 
-    ngxplus::IOBuf iobuf;
-    ngxplus::IOBufAsZeroCopyOutputStream zero_out(&iobuf);
+    ngxplus::NgxplusIOBuf iobuf;
+    common::IOBufAsZeroCopyOutputStream zero_out(&iobuf);
     if (!student.SerializeToZeroCopyStream(&zero_out)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "serialize error");
+        LOG(ALERT, "serialize error");
         return -1;
     }
 
     if (!student.SerializeToZeroCopyStream(&zero_out)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "serialize again error");
+        LOG(ALERT, "serialize again error");
         return -1;
     }
 
@@ -44,9 +45,11 @@ int main()
     // must cutn, protobuf ParseFromStream return TRUE 
     // only when consumed entired payload
     iobuf.cutn(len);
-    ngxplus::IOBufAsZeroCopyInputStream zero_in(&iobuf);
+    std::cout << "reamin len after cutn: " << iobuf.get_byte_count() << std::endl;
+    iobuf.print_info();
+    common::IOBufAsZeroCopyInputStream zero_in(&iobuf);
     if (!student_parse1.ParseFromZeroCopyStream(&zero_in)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "parse error");
+        LOG(ALERT, "parse error");
         return -1;
     }
     std::string result1;
@@ -54,9 +57,11 @@ int main()
     std::cout << result1 << std::endl;
     // carrayon() must along with cutn()
     iobuf.carrayon();
+    std::cout << "reamin len after carrayon: " << iobuf.get_byte_count() << std::endl;
+    iobuf.print_info();
 
     if (!student_parse2.ParseFromZeroCopyStream(&zero_in)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "parse again error");
+        LOG(ALERT, "parse again error");
         return -1;
     }
     std::string result2;

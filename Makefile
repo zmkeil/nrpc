@@ -83,11 +83,10 @@ INCS=src/channel.h \
     src/service_context.h \
     src/service_set.h \
 	src/policy/protocol.h \
-	ngxplus/timer.h \
-	ngxplus/log.h \
-    ngxplus/info_log_context.h \
-	ngxplus/iobuf.h \
-    ngxplus/iobuf_zero_copy_stream.h
+	ngxplus/ngxplus_timer.h \
+	ngxplus/ngxplus_log.h \
+	ngxplus/ngxplus_iobuf.h \
+	ngxplus/ngxplus_open_file.h
 
 LIBS=libngxrpc.a \
 	 libngxrpc.so

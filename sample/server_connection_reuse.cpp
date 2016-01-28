@@ -2,8 +2,8 @@
 #include <string>
 #include "server.h"
 #include "controller.h"
-#include "info_log_context.h"
 #include "echo.pb.h"
+#include "util.h"
 
 class EchoServiceImpl : public nrpc::EchoService {
 public:
@@ -35,7 +35,7 @@ public:
 
 int main()
 {
-	ngxplus::InfoLogContext::set_log_level(WARN);
+    sample::server_side_config_log();
 
     nrpc::Server server;
     EchoServiceImpl service;

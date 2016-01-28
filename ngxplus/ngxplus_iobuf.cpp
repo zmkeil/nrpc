@@ -117,7 +117,7 @@ size_t NgxplusIOBuf::current_block_remain_data_size()
     if (!current_read_pool) {
         return 0;
     }
-    return std::min((size_t)((char*)current_read_pool->d.last - _read_point), get_byte_count());
+    return (size_t)((char*)current_read_pool->d.last - _read_point);
 }
 
 size_t NgxplusIOBuf::current_block_consume_data_size()
@@ -184,6 +184,8 @@ void NgxplusIOBuf::dump_info(std::string* info)
         common::string_appendf(info, "start_point = %p\n\n", _start_points[i++]);
         p = p->d.next;
     }
+    common::string_appendf(info, "_blocks = %d\n", _blocks);
+    common::string_appendf(info, "_read_block = %d\n", _read_block);
     common::string_appendf(info, "_read_point = %p\n", _read_point);
     common::string_appendf(info, "bytes = %zu\n", get_byte_count());
 }

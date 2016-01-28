@@ -13,12 +13,12 @@
 
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
-#include "iobuf_zero_copy_stream.h"
+#include <io/iobuf_zero_copy_stream.h>
+#include <ngxplus_iobuf.h>
 #include "service_set.h"
 #include "server.h"
 #include "protocol.h"
 #include "service_context.h"
-#include "info_log_context.h"
 
 struct ngx_connection_s;
 typedef struct ngx_connection_s ngx_connection_t;
@@ -207,11 +207,11 @@ public:
 
 
     // iobuf of the rpc procedure
-    bool set_iobuf(ngxplus::IOBuf* iobuf) {
+    bool set_iobuf(ngxplus::NgxplusIOBuf* iobuf) {
         _iobuf = iobuf;
         return true;
     }
-    ngxplus::IOBuf* iobuf() {
+    ngxplus::NgxplusIOBuf* iobuf() {
         return _iobuf;
     }
 
@@ -289,7 +289,7 @@ private:
     // iobuf for both of server and client side
     // In server: first >> iobuf and then << iobuf, In client: excuted in contrast
     // destory it in finalize()
-    ngxplus::IOBuf* _iobuf;
+    ngxplus::NgxplusIOBuf* _iobuf;
 
     // stastics for both of server and client side
     long _start_time_s;

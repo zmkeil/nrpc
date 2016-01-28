@@ -1,9 +1,8 @@
-#include <common.h>
-#include <info_log_context.h>
+#include <common_head.h>
 #include "channel.h"
 #include "controller.h"
-
 #include "echo.pb.h"
+#include "util.h"
 
 int main(int argc, char* argv[])
 {
@@ -11,10 +10,7 @@ int main(int argc, char* argv[])
         printf("Usage: ./client <IP>\n");
         return -1;
     }
-    // for test
-    std::string error_log_file("client_error.log");
-    ngxplus::InfoLogContext::set_log_file(error_log_file);
-    //common::COMMON_TEST_FLAG = 1;
+    sample::client_side_config_log();
 
     nrpc::Channel channel;
     nrpc::ChannelOption option;

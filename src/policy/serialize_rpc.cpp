@@ -1,7 +1,11 @@
 #include <memory>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/message.h>
-#include "info_log_context.h"
+#include <comlog/info_log_context.h>
+#include <io/iobuf_zero_copy_stream.h>
+#include <ngxplus_iobuf.h>
+#include <ngxplus_timer.h>
+
 #include "protocol.h"
 #include "controller.h"
 #include "ngx_nrpc_handler.h"
@@ -13,7 +17,7 @@ namespace nrpc
 // Interfaces of std serialize policy
 static ParseResult default_parse_message(Controller* cntl, bool read_eof);
 static int default_pack_request(
-        ngxplus::IOBuf* msg,
+        ngxplus::NgxplusIOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
         Controller* cntl, const google::protobuf::Message& request);
 static void default_process_request(Controller* cntl);
@@ -37,7 +41,7 @@ struct Protocol default_protocol {
     "nrpc_default"
 };
 
-static bool default_nrpc_detecte_format(ngxplus::IOBuf* source, int32_t *meta_size, int32_t *body_size)
+static bool default_nrpc_detecte_format(ngxplus::NgxplusIOBuf* source, int32_t *meta_size, int32_t *body_size)
 {
     if (source->get_byte_count() < 12) {
         return false;
@@ -56,7 +60,7 @@ static bool default_nrpc_detecte_format(ngxplus::IOBuf* source, int32_t *meta_si
 // Parse binary format of nrpc
 ParseResult default_parse_message(Controller* cntl, bool read_eof)
 {
-    ngxplus::IOBuf* source = cntl->iobuf();
+    ngxplus::NgxplusIOBuf* source = cntl->iobuf();
     DefaultProtocolCtx* pctx = static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx());
     if (pctx->meta_size == -1) {
         if (!default_nrpc_detecte_format(source, &pctx->meta_size, &pctx->body_size)) {
@@ -72,7 +76,7 @@ ParseResult default_parse_message(Controller* cntl, bool read_eof)
         }
         rpc_meta = new RpcMeta();
         source->cutn((int)pctx->meta_size);
-        ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(source);
+        common::IOBufAsZeroCopyInputStream zero_in_stream(source);
         if (!rpc_meta->ParseFromZeroCopyStream(&zero_in_stream)) {
             cntl->set_result_text("parse meta error");
             return PARSE_BAD_META;
@@ -90,17 +94,17 @@ ParseResult default_parse_message(Controller* cntl, bool read_eof)
 // this method will release all the remain data from msg,
 // and build the default_nrpc_package with (format_describe:meta:body)
 static bool default_nrpc_pack_handle(
-        ngxplus::IOBuf* msg,
+        ngxplus::NgxplusIOBuf* msg,
         const google::protobuf::Message* rpc_meta, 
         const google::protobuf::Message* rpc_body)
 {
     msg->release_all();
-    char* buf;
-    msg->alloc(&buf, 12, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
+    char* buf = nullptr;
+    msg->alloc(&buf, 12, common::IOBUF_ALLOC_EXACT);
     *(int32_t*)buf = *(int32_t*)"NRPC";
     buf += 4;
 
-    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
+    common::IOBufAsZeroCopyOutputStream zero_out_stream(msg);
     if (!rpc_meta->SerializeToZeroCopyStream(&zero_out_stream)) {
         LOG(ALERT, "Failed to serialize rpc_meta in default_nrpc_pack_handle");
         return false;
@@ -122,7 +126,7 @@ static bool default_nrpc_pack_handle(
 
 // Pack `request' to `method' into `buf'.
 int default_pack_request(
-        ngxplus::IOBuf* msg,
+        ngxplus::NgxplusIOBuf* msg,
         const google::protobuf::MethodDescriptor* method,
         Controller* cntl, const google::protobuf::Message& request)
 {
@@ -162,7 +166,7 @@ void default_process_request(Controller* cntl)
 		return done->Run();
 	}
 
-    ngxplus::IOBuf* req_buf = cntl->iobuf();
+    ngxplus::NgxplusIOBuf* req_buf = cntl->iobuf();
     const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx()));
     const RpcRequestMeta& req_meta = pctx->rpc_meta->request();
 
@@ -189,7 +193,7 @@ void default_process_request(Controller* cntl)
     // cutn() before ParseFromZeroCopyStream
     int body_size = pctx->body_size;
     req_buf->cutn(body_size);
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(req_buf);
+    common::IOBufAsZeroCopyInputStream zero_in_stream(req_buf);
     if (!req->ParseFromZeroCopyStream(&zero_in_stream)) {
         cntl->set_result(RPC_PROCESS_ERROR);
         cntl->set_result_text("Failed to parse rpc request");
@@ -213,7 +217,7 @@ void default_process_request(Controller* cntl)
 void default_process_response(Controller* cntl)
 {
     google::protobuf::Message* resp = cntl->response();
-    ngxplus::IOBuf* resp_buf = cntl->iobuf();
+    ngxplus::NgxplusIOBuf* resp_buf = cntl->iobuf();
     const DefaultProtocolCtx* pctx = (static_cast<DefaultProtocolCtx*>(cntl->protocol_ctx()));
     RpcMeta* rpc_meta = pctx->rpc_meta;
 
@@ -223,7 +227,7 @@ void default_process_response(Controller* cntl)
             (rpc_meta->response().error_code() != RPC_SERVICE_OK))) {
         int body_size = pctx->body_size;
         resp_buf->cutn(body_size);
-        ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(resp_buf);
+        common::IOBufAsZeroCopyInputStream zero_in_stream(resp_buf);
         if (!resp->ParseFromZeroCopyStream(&zero_in_stream)) {
             cntl->set_result(RPC_PROCESS_ERROR);
             cntl->set_result_text("Failed to parse rpc response");
@@ -247,7 +251,7 @@ void default_send_rpc_response(Controller* cntl, bool real_send)
     // the rpc_meta->response.error_code/text is setted in user_defined
     // service.method, with cntl->SetFailed(string&)
     RpcMeta* rpc_meta = ((DefaultProtocolCtx*)cntl->protocol_ctx())->rpc_meta;
-    ngxplus::IOBuf* iobuf = cntl->iobuf();
+    ngxplus::NgxplusIOBuf* iobuf = cntl->iobuf();
 
     // pack nrpc default packages
     // here resp may be incomplete or error, no matter

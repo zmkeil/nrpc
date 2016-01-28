@@ -5,7 +5,7 @@
 #include <cxxabi.h>
 #include <google/protobuf/message.h>
 #include <string_printf.h>
-#include "info_log_context.h"
+#include <comlog/info_log_context.h>
 #include "service_set.h"
 
 namespace nrpc {

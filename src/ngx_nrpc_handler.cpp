@@ -1,3 +1,6 @@
+#include <io/iobuf_zero_copy_stream.h>
+#include "ngxplus_iobuf.h"
+#include "ngxplus_timer.h"
 #include "ngx_nrpc_handler.h"
 #include "controller.h"
 #include "protocol.h"
@@ -107,9 +110,9 @@ void ngx_nrpc_determine_policy(ngx_event_t *rev)
     }
 
     // get iobuf, and read the following data
-    ngxplus::IOBuf* iobuf = new ngxplus::IOBuf(); // default blocksize 1024
+    ngxplus::NgxplusIOBuf* iobuf = new ngxplus::NgxplusIOBuf(); // default blocksize 1024
     char* buf;
-    int len = iobuf->alloc(&buf, 1, ngxplus::IOBuf::IOBUF_ALLOC_EXACT);
+    int len = iobuf->alloc(&buf, 1, common::IOBUF_ALLOC_EXACT);
     if (len != 1) {
         cntl->set_result(RPC_INNER_ERROR);
         cntl->set_result_text("determin alloc error");
@@ -140,8 +143,8 @@ void ngx_nrpc_read_request(ngx_event_t *rev)
         return ngx_nrpc_finalize_session(cntl);
     }
 
-    ngxplus::IOBuf *iobuf = cntl->iobuf();
-    ngxplus::IOBufAsZeroCopyOutputStream zero_out_stream(iobuf);
+    ngxplus::NgxplusIOBuf *iobuf = cntl->iobuf();
+    common::IOBufAsZeroCopyOutputStream zero_out_stream(iobuf);
 
     char* buf;
     int size;
@@ -206,9 +209,9 @@ void ngx_nrpc_send_response(ngx_event_t* wev)
 {
     ngx_connection_t* c = (ngx_connection_t*)wev->data;
     Controller* cntl = (Controller*)c->data;
-    ngxplus::IOBuf* iobuf = cntl->iobuf();
+    ngxplus::NgxplusIOBuf* iobuf = cntl->iobuf();
 
-    ngxplus::IOBufAsZeroCopyInputStream zero_in_stream(iobuf);
+    common::IOBufAsZeroCopyInputStream zero_in_stream(iobuf);
     char* buf;
     int size;
     while (zero_in_stream.Next((const void**)&buf, &size)) {

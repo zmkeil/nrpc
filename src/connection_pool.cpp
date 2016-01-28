@@ -8,8 +8,10 @@
   
  **********************************************/
 
-#include <common.h>
-#include "info_log_context.h"
+#include <common_head.h>
+#include <pthread_util.h>
+#include <network_util.h>
+#include <comlog/info_log_context.h>
 #include "connection_pool.h"
 
 namespace nrpc {
@@ -30,7 +32,7 @@ bool ConnectionPool::init(const char* server_addr, int port, int connect_timeout
     _server_port = port;
     _servaddr_len = sizeof(_servaddr);
     if (!common::sockaddr_init(&_servaddr, _servaddr_len, server_addr, port)) {
-        LOG(NGX_LOG_LEVEL_ALERT, "error ip format \"%s\"", _server_ip);
+        LOG(ALERT, "error ip format \"%s\"", _server_ip);
         return false;
     }
 

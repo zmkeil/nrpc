@@ -8,7 +8,7 @@
   
  **********************************************/
 
-#include "timer.h"
+#include <ngxplus_timer.h>
 #include "controller.h"
 #include "service_context_log.h"
 #include "proto/nrpc_meta.pb.h"
@@ -139,7 +139,7 @@ int Controller::server_write_timeout()
 
 bool Controller::get_concurrency()
 {
-	return _server->get_concurrency();
+	return _server ? _server->get_concurrency() : 10;
 }
 
 void Controller::free_concurrency()
@@ -245,10 +245,6 @@ void Controller::finalize()
     }
 
     // server side
-    // free iobuf
-    if (_iobuf) {
-        delete _iobuf;
-    }
 
     // log
     ServiceContextLog* access_log = ServiceContextLog::get_context();
@@ -270,7 +266,18 @@ void Controller::finalize()
     finalize_server_connection(_ngx_connection);
 
     // free cntl, then this session is over
-    // delete this;
+    // be done in ngx_nrpc_finalize_session()
+
+    // free iobuf
+    if (_iobuf) {
+        delete _iobuf;
+    }
+    if (_request) {
+        delete _request;
+    }
+    if (_response) {
+        delete _response;
+    }
 
     return;
 }

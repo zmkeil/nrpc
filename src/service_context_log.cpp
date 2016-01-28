@@ -1,4 +1,5 @@
-#include <common.h>
+#include <common_head.h>
+#include <string_printf.h>
 #include "service_context_log.h"
 
 namespace nrpc {

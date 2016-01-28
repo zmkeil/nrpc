@@ -9,6 +9,10 @@
  **********************************************/
 
 #include <google/protobuf/text_format.h>
+#include <comlog/info_log_context.h>
+#include <io/iobuf_zero_copy_stream.h>
+#include <ngxplus_iobuf.h>
+
 #include "controller.h"
 #include "protocol.h"
 #include "echo.pb.h"
@@ -37,7 +41,7 @@ int main()
 {
     EchoServiceImpl service;
     // a mock iobuf, through the entire procedure
-    ngxplus::IOBuf iobuf;
+    ngxplus::NgxplusIOBuf iobuf;
 
     /******************************
      * client side

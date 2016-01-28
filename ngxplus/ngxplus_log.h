@@ -17,7 +17,7 @@
 
 namespace ngxplus {
 
-class NgxplusLog : common::AbstractLog
+class NgxplusLog : public common::AbstractLog
 {
 public:
     NgxplusLog() : AbstractLog() {}
@@ -26,6 +26,7 @@ public:
     bool init();
     bool init(const std::string& name);
 
+protected:
     void comlog_write_core(int level, const char* fmt, va_list args);
 
 private:

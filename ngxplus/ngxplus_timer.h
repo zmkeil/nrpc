@@ -8,7 +8,6 @@
   
  **********************************************/
 
-
 #ifndef NGXPLUS_TIMER_H
 #define NGXPLUS_TIMER_H
 
