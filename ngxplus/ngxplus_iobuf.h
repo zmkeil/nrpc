@@ -9,7 +9,11 @@ namespace ngxplus {
 class NgxplusIOBuf : public common::AbstractIOBuf
 {
 public:
-	NgxplusIOBuf(size_t block_size) : AbstractIOBuf(block_size) {}
+	NgxplusIOBuf(size_t block_size) : AbstractIOBuf(block_size) {
+        _pool = nullptr;
+        _read_pool = nullptr;
+        memset(_start_points, 0, sizeof(char*) * IOBUF_MAX_BLOCKS_NUM);
+    }
 	virtual ~NgxplusIOBuf() {}
 
 /* store and resume the read point at one time */

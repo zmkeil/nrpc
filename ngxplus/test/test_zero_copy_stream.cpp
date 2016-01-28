@@ -11,7 +11,7 @@ int main()
 
 /* first alloc some data */
     ngxplus::NgxplusIOBuf iobuf(1024);
-    common::IOBufAsZeroCopyOutputStream zero_copy_out(&iobuf);
+    common::IOBufAsZeroCopyOutputStream zero_copy_out(static_cast<common::AbstractIOBuf*>(&iobuf));
     if (!zero_copy_out.Next((void**)&buf, &size)) {
         std::cout << "next error" << std::endl;
         return -1;
