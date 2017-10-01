@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <string>
 #include "server.h"
 #include "controller.h"
@@ -17,10 +18,19 @@ public:
         nrpc::Controller* cntl = static_cast<nrpc::Controller*>(cntl_base);
         // 1.get global data to this session
         EchoContext* context = static_cast<EchoContext*>(cntl->service_context());
-        response->set_res(request->msg() + " " + *context->comments());
+		char p[1024] = {0};
+		snprintf(p, 1024, ", id:%d, number:%d", request->persons(0).id(), request->persons(0).number());
+		std::string str(p);
+        response->set_res(request->msg() + " " + *context->comments() + str);
         // 2.log the session local information
 		context->set_session_field("Recv \"" + request->msg() + "\"");
         context->set_session_field("Echo \"" + request->msg() + "\"");
+		//context->set_session_field("PersonC " + request->persons_size());
+		//context->set_session_field("Person[0].id " + request->persons(0).id());
+		//context->set_session_field("Person[0].number " + request->persons(0).number());
+		LOG(ERROR, "PersonC %d", request->persons_size());
+		LOG(ERROR, "Person[0].id] %d", request->persons(0).id());
+		LOG(ERROR, "Person[0].number %d", request->persons(0).number());
 
 		return done->Run();
 	}

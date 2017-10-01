@@ -11,8 +11,20 @@ message Student
     required string phone = 7;
 }
 
+message Person {
+	enum Type {
+		MAN = 0;
+		WOMAN = 1;
+	}
+	required Type type = 1;
+	required uint32 id = 2;
+	optional string name = 3;
+	optional fixed32 number = 4;
+}
+
 message EchoRequest {
 	required string msg = 1;
+	repeated Person persons = 2;
 }
 
 message EchoResponse {
