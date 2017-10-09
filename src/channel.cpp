@@ -186,7 +186,7 @@ void rpc_call_core(Controller* cntl)
             } else {
                 // error
                 cntl->set_result(RPC_INNER_ERROR);
-                cntl->set_result_text("parse response error");
+                cntl->set_result_text("parse response meta error");
                 return cntl->finalize();
             }
         }
