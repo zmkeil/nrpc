@@ -26,7 +26,7 @@ struct ChannelOption
     ChannelOption() : connection_timeout(5),
     send_timeout(5),
     read_timeout(5),
-    max_retry_time(0) {}
+    max_retry_time(3) {}
     int connection_timeout;
     int send_timeout;
     int read_timeout;

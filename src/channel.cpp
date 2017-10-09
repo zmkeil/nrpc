@@ -160,6 +160,8 @@ void rpc_call_core(Controller* cntl)
         if (size == 0) {
             continue;
         }
+        // backword _byte, but not _buf
+        msg->rebyte(0 - size);
         remain_len = size;
         while (remain_len > 0) {
             int current_recv_len = common::recv_with_timeout(sockfd, recv_buf,
@@ -172,6 +174,13 @@ void rpc_call_core(Controller* cntl)
             if (current_recv_len == 0) {
                 recv_eof = true;
             }
+            // forward _byte, but not _buf
+            msg->rebyte(current_recv_len);
+            //printf("RECV_BUF_LEN: %d\n", current_recv_len);
+            //for (int i = 0; i < current_recv_len; i++) {
+            //    printf("RECV_BUF: %X\n", recv_buf[i]);
+            //}
+            //printf("\n");
             ParseResult parse_result =  default_protocol.parse(cntl, recv_eof);
             if (parse_result == PARSE_DONE) {
                 // Immediately release the connection if not recv_eof, else drop it later
