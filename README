@@ -49,4 +49,6 @@ code-manager:
 		`-gtest
 the common module, you can implement youself, or refer to https://github.com/zmkeil/common.git
 
+An associated implement of JAVA client, refer to https://github.com/zmkeil/jrpc-client
 
+For details, refer to blog http://www.cnblogs.com/zmkeil/p/5176758.html
